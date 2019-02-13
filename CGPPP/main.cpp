@@ -1,7 +1,7 @@
 
 // MIT License
 //
-// Copyright (c) 2018, 2019 degski
+// Copyright (c) 2019 degski
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,17 +38,22 @@
 #include <type_traits>
 #include <vector>
 
+#ifndef nl
+#define nl '\n'
+#endif
 
-namespace fs = std::filesystem;
-
-#include <SFML/System.hpp> // Test linking of a (random) library.
+#include "cgpcpp.hpp"
 
 
-int wmain ( ) {
+int main ( ) {
 
-    sf::Clock c;
+    cgp::FunctionSet<> fs;
 
-    std::wcout << L"Hello world..." << std::endl;
+    fs.addNodeFunction ( "add", "mul", "sub", "tanh" );
+
+    fs.print ( );
+
+    std::cout << sizeof ( cgp::Node<float> ) << ' ' << sizeof ( cgp::NodeArray<int> ) << ' ' << cgp::FunctionSet<>::sizeBuiltinFunctionSet ( ) << nl;
 
     return EXIT_SUCCESS;
 }
