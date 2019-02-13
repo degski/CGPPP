@@ -644,42 +644,22 @@ namespace function {
 
 // Node function add. Returns the sum of all the inputs.
 template<typename Real> Real f_add ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    int i;
-    Real sum = inputs_ [ 0 ];
-    for ( i = 1; i < inputs_.size ( ); i++ ) {
-        sum += inputs_ [ i ];
-    }
-    return sum;
+    return std::accumulate ( std::begin ( inputs_ ), std::end ( inputs_ ), Real { 0 }, std::plus<Real> ( ) );
 }
 
 // Node function sub. Returns the first input minus all remaining inputs_.
 template<typename Real> Real f_sub ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    int i;
-    Real sum = inputs_ [ 0 ];
-    for ( i = 1; i < inputs_.size ( ); i++ ) {
-        sum -= inputs_ [ i ];
-    }
-    return sum;
+    return std::accumulate ( std::next ( std::begin ( inputs_ ) ), std::end ( inputs_ ), inputs_ [ 0 ], std::minus<Real> ( ) );
 }
 
 // Node function mul. Returns the multiplication of all the inputs_.
 template<typename Real> Real f_mul ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    int i;
-    Real multiplication = inputs_ [ 0 ];
-    for ( i = 1; i < inputs_.size ( ); i++ ) {
-        multiplication *= inputs_ [ i ];
-    }
-    return multiplication;
+    return std::accumulate ( std::begin ( inputs_ ), std::end ( inputs_ ), Real { 1 }, std::multiplies<Real> ( ) );
 }
 
 // Node function div. Returns the first input divided by the second input divided by the third input etc
 template<typename Real> Real f_divide ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    int i;
-    Real divide = inputs_ [ 0 ];
-    for ( i = 1; i < inputs_.size ( ); i++ ) {
-        divide /= inputs_ [ i ];
-    }
-    return divide;
+    return std::accumulate ( std::next ( std::begin ( inputs_ ) ), std::end ( inputs_ ), inputs_ [ 0 ], std::divides<Real> ( ) );
 }
 
 // Node function idiv.Returns the first input (cast to int) divided by the second input (cast to int),
@@ -778,82 +758,67 @@ template<typename Real> Real f_randFloat ( const std::vector<Real> & inputs_, co
 // Node function and. logical AND, returns '1' if all inputs_ are '1'
 //    else, '0'
 template<typename Real> Real f_and ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    int i;
-    for ( i = 0; i < inputs_.size ( ); i++ ) {
-        if ( inputs_ [ i ] == 0.0 ) {
-            return 0.0;
-        }
+    for ( const auto i : inputs_ ) {
+        if ( not ( i ) )
+            return Real { 0 };
     }
-    return 1.0;
+    return Real { 1 };
 }
 
 // Node function and. logical NAND, returns '0' if all inputs_ are '1'
 //    else, '1'
 template<typename Real> Real f_nand ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    int i;
-    for ( i = 0; i < inputs_.size ( ); i++ ) {
-        if ( inputs_ [ i ] == 0.0 ) {
-            return 1.0;
-        }
+    for ( const auto i : inputs_ ) {
+        if ( not ( i ) )
+            return Real { 1 };
     }
-    return 0.0;
+    return Real { 0 };
 }
 
 // Node function or. logical OR, returns '0' if all inputs_ are '0'
 //    else, '1'
 template<typename Real> Real f_or ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    int i;
-    for ( i = 0; i < inputs_.size ( ); i++ ) {
-        if ( inputs_ [ i ] == 1.0 ) {
-            return 1.0;
-        }
+    for ( const auto i : inputs_ ) {
+        if ( i )
+            return Real { 1 };
     }
-    return 0.0;
+    return Real { 0 };
 }
 
 // Node function nor. logical NOR, returns '1' if all inputs_ are '0'
 //    else, '0'
 template<typename Real> Real f_nor ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    int i;
-    for ( i = 0; i < inputs_.size ( ); i++ ) {
-        if ( inputs_ [ i ] == 1.0 ) {
-            return 0.0;
-        }
+    for ( const auto i : inputs_ ) {
+        if ( i )
+            return Real { 0 };
     }
-    return 1.0;
+    return Real { 1 };
 }
 
 // Node function xor. logical XOR, returns '1' iff one of the inputs_ is '1'
 //    else, '0'. AKA 'one hot'.
 template<typename Real> Real f_xor ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    int i;
     int numOnes = 0;
-    int out;
-    for ( i = 0; i < inputs_.size ( ); i++ ) {
-        if ( inputs_ [ i ] == 1 ) {
-            numOnes++;
-        }
-        if ( numOnes > 1 ) {
-            break;
-        }
+    for ( const auto i : inputs_ ) {
+        if ( i )
+            ++numOnes;
+        if ( numOnes > 1 )
+            return Real { 0 };
     }
-    return numOnes == 1;
+    return Real { 1 };
 }
 
 // Node function xnor. logical XNOR, returns '0' iff one of the inputs_ is '1'
 //    else, '1'.
 template<typename Real> Real f_xnor ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    int i;
     int numOnes = 0;
-    for ( i = 0; i < inputs_.size ( ); i++ ) {
-        if ( inputs_ [ i ] == 1 ) {
-            numOnes++;
+    for ( const auto i : inputs_ ) {
+        if ( i )
+            ++numOnes;
+        if ( numOnes > 1 )
+            return Real { 1 };
         }
-        if ( numOnes > 1 ) {
-            break;
-        }
-    }
-    return numOnes != 1;
+        return Real { 0 };
 }
 
 // Node function not. logical NOT, returns '1' if first input is '0', else '1'
@@ -870,23 +835,14 @@ template<typename Real> Real f_wire ( const std::vector<Real> & inputs_, const s
 //    The specific sigmoid function used in the logistic function.
 //    range: [0,1]
 template<typename Real> Real f_sigmoid ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    Real weightedInputSum;
-    Real out;
-    weightedInputSum = sumWeigtedInputs ( inputs_, connectionWeights_ );
-    out = 1 / ( 1 + exp ( -weightedInputSum ) );
-    return out;
+    return Real { 1 } / ( Real { 1 } + std::exp ( -sumWeigtedInputs ( inputs_, connectionWeights_ ) ) );
 }
 
 // Node function Gaussian. returns the Gaussian of the sum of weighted inputs_.
 //    range: [0,1]
 template<typename Real> Real f_gaussian ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    Real weightedInputSum;
-    Real out;
-    int centre = 0;
-    int width = 1;
-    weightedInputSum = sumWeigtedInputs ( inputs_, connectionWeights_ );
-    out = exp ( -( pow ( weightedInputSum - centre, 2 ) ) / ( 2 * pow ( width, 2 ) ) );
-    return out;
+    constexpr int centre = 0, width = 1;
+    return std::exp ( -( std::pow ( sumWeigtedInputs ( inputs_, connectionWeights_ ) - centre, Real { 2 } ) ) / ( Real { 2 } * std::pow ( width, 2 ) ) );
 }
 
 // Node function step. returns the step function of the sum of weighted inputs_.
@@ -905,7 +861,7 @@ template<typename Real> Real f_softsign ( const std::vector<Real> & inputs_, con
 // Node function tanh. returns the tanh function of the sum of weighted inputs_.
 //    range: [-1,1]
 template<typename Real> Real f_hyperbolicTangent ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    return tanh ( sumWeigtedInputs ( inputs_, connectionWeights_ ) );
+    return std::tanh ( sumWeigtedInputs ( inputs_, connectionWeights_ ) );
 }
 
 } // namespace function
