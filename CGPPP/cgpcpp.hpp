@@ -487,8 +487,17 @@ struct Node {
         std::generate_n ( back_emplacer ( weights ), maxArity, [ & params_ ] ( ) { return params_.getRandomConnectionWeight ( ); } );
     }
 
-    Node & operator = ( const Node & ) = default;
-    Node & operator = ( Node && ) noexcept = default;
+    [[ maybe_unused ]] Node & operator = ( const Node & ) = default;
+    [[ maybe_unused ]] Node & operator = ( Node && ) noexcept = default;
+
+    [[ nodiscard ]] bool operator == ( const Node & rhs_ ) const noexcept {
+        function == rhs_.function;
+        inputs == rhs_.inputs;
+        // weights == rhs_.weights; // for ANN
+    }
+    [[ nodiscard ]] bool operator != ( const Node & rhs_ ) const noexcept {
+        return not ( operator == ( rhs_ ) );
+    }
 };
 
 
@@ -520,8 +529,6 @@ struct Chromosome {
         numActiveNodes { numNodes },
         arity { params_.arity },
         generation { 0 },
-        nodes { },
-        outputNodes { },
         activeNodes { numActiveNodes },
         outputValues { numOutputs },
         nodeInputsHold { arity },
@@ -538,8 +545,21 @@ struct Chromosome {
         setChromosomeActiveNodes ( );
     }
 
-    Chromosome & operator = ( const Chromosome & ) = default;
-    Chromosome & operator = ( Chromosome && ) noexcept = default;
+    [[ maybe_unused ]] Chromosome & operator = ( const Chromosome & ) = default;
+    [[ maybe_unused ]] Chromosome & operator = ( Chromosome && ) noexcept = default;
+
+    [[ nodiscard ]] bool operator == ( const Chromosome & rhs_ ) const noexcept {
+        return
+            numInputs == rhs_.numInputs and
+            numOutputs == rhs_.numOutputs and
+            numNodes == rhs_.numNodes and
+            arity == rhs_.arity and
+            nodes == rhs_.nodes and
+            outputNodes == rhs_.outputNodes;
+    }
+    [[ nodiscard ]] bool operator != ( const Chromosome & rhs_ ) const noexcept {
+        return not ( operator == ( rhs_ ) );
+    }
 
     // Executes the given chromosome.
     void execute ( const std::vector<Real> & inputs_ ) noexcept {
@@ -952,10 +972,6 @@ template<typename Real> Real f_hyperbolicTangent ( const std::vector<Real> & inp
 #include <iostream>
 #include <random>
 
-#include <splitmix.hpp> // https://github.com/degski/Sax/blob/master/splitmix.hpp
-
-static splitmix64 rgen { std::random_device { } ( ) };
-
 #include "cgp.hpp"
 
 /*
@@ -1046,379 +1062,6 @@ struct results {
     struct chromosome **bestChromosomes;
 };
 
-
-/*
-    Prototypes of functions used internally to CGP-Library
-*/
-
-/* chromosome functions */
-static void setChromosomeActiveNodes ( struct chromosome *chromo );
-static void recursivelySetActiveNodes ( struct chromosome *chromo, int nodeIndex );
-static void sortChromosomeArray ( struct chromosome **chromoArray, int numChromos );
-static void getBestChromosome ( struct chromosome **parents, struct chromosome **children, int numParents, int numChildren, struct chromosome *best );
-static void saveChromosomeLatexRecursive ( struct chromosome *chromo, int index, FILE *fp );
-
-/* node functions */
-static struct node *initialiseNode ( int numInputs, int numNodes, int arity, int numFunctions, double connectionWeightRange, double recurrentConnectionProbability, int nodePosition );
-static void freeNode ( struct node *n );
-static void copyNode ( struct node *nodeDest, struct node *nodeSrc );
-
-/* getting gene value functions  */
-static double getRandomConnectionWeight ( double weightRange ) noexcept;
-static int getRandomNodeInput ( int numChromoInputs, int numNodes, int nodePosition, double recurrentConnectionProbability );
-static int getRandomFunction ( int numFunctions );
-static int getRandomChromosomeOutput ( int numInputs, int numNodes, int shortcutConnections );
-
-/* function set functions */
-static int addPresetFunctionToFunctionSet ( struct parameters *params, char const *functionName );
-static void copyFunctionSet ( struct functionSet *funcSetDest, struct functionSet *funcSetSrc );
-static void printFunctionSet ( struct parameters *params );
-
-/* results functions */
-struct results* initialiseResults ( struct parameters *params, int numRuns );
-
-/* mutation functions  */
-static void probabilisticMutation ( struct parameters *params, struct chromosome *chromo );
-static void pointMutation ( struct parameters *params, struct chromosome *chromo );
-static void pointMutationANN ( struct parameters *params, struct chromosome *chromo );
-static void probabilisticMutationOnlyActive ( struct parameters *params, struct chromosome *chromo );
-static void singleMutation ( struct parameters *params, struct chromosome *chromo );
-
-/* selection scheme functions */
-static void selectFittest ( struct parameters *params, struct chromosome **parents, struct chromosome **candidateChromos, int numParents, int numCandidateChromos );
-
-/* reproduction scheme functions */
-static void mutateRandomParent ( struct parameters *params, struct chromosome **parents, struct chromosome **children, int numParents, int numChildren );
-
-/* node functions defines in CGP-Library */
-static double _add ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _sub ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _mul ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _divide ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _and ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _absolute ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _squareRoot ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _square ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _cube ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _power ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _exponential ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _sine ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _cosine ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _tangent ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _randFloat ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _constTwo ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _constOne ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _constZero ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _constPI ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _nand ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _or ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _nor ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _xor ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _xnor ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _not ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _wire ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _sigmoid ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _gaussian ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _step ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _softsign ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-static double _hyperbolicTangent ( const int numInputs, const double *inputs, const double *connectionWeights ) noexcept;
-
-/* other */
-static double randDecimal ( ) noexcept;
-static int randInt ( int n ) noexcept;
-static double sumWeigtedInputs ( const int numInputs, const double *inputs, const double *connectionWeights );
-static void sortIntArray ( int *array, const int length );
-static void sortDoubleArray ( double *array, const int length );
-static int cmpInt ( const void * a, const void * b );
-static int cmpDouble ( const void * a, const void * b );
-static double medianInt ( const int *anArray, const int length );
-static double medianDouble ( const double *anArray, const int length );
-
-
-/*
-    parameters function definitions
-*/
-
-/*
-    Initialises a parameter struct with default values. These
-    values can be individually changed via set functions.
-*/
-DLL_EXPORT struct parameters *initialiseParameters ( const int numInputs, const int numNodes, const int numOutputs, const int arity ) {
-
-    struct parameters *params;
-
-    /* allocate memory for parameters */
-    params = ( struct parameters* )std::malloc ( sizeof ( struct parameters ) );
-
-    /* Set default values */
-    params->mu = 1;
-    params->lambda = 4;
-    params->evolutionaryStrategy = '+';
-    params->mutationRate = 0.05;
-    params->recurrentConnectionProbability = 0.0;
-    params->connectionWeightRange = 1;
-    params->shortcutConnections = 1;
-
-    params->targetFitness = 0;
-
-    params->updateFrequency = 1;
-
-    setNumInputs ( params, numInputs );
-    setNumNodes ( params, numNodes );
-    setNumOutputs ( params, numOutputs );
-    setArity ( params, arity );
-
-    params->mutationType = probabilisticMutation;
-    strncpy ( params->mutationTypeName, "probabilistic", MUTATIONTYPENAMELENGTH );
-
-    params->funcSet = ( struct functionSet* )std::malloc ( sizeof ( struct functionSet ) );
-    params->funcSet->numFunctions = 0;
-
-    params->fitnessFunction = supervisedLearning;
-    strncpy ( params->fitnessFunctionName, "supervisedLearning", FITNESSFUNCTIONNAMELENGTH );
-
-    params->selectionScheme = selectFittest;
-    strncpy ( params->selectionSchemeName, "selectFittest", SELECTIONSCHEMENAMELENGTH );
-
-    params->reproductionScheme = mutateRandomParent;
-    strncpy ( params->reproductionSchemeName, "mutateRandomParent", REPRODUCTIONSCHEMENAMELENGTH );
-
-    params->numThreads = 1;
-
-    return params;
-}
-
-
-/*
-    Frees the memory associated with the given parameter structure
-*/
-DLL_EXPORT void freeParameters ( struct parameters *params ) {
-    if ( params != nullptr ) {
-        free ( params->funcSet );
-        free ( params );
-    }
-}
-
-/*
-    prints the given parameters to the terminal
-*/
-DLL_EXPORT void printParameters ( struct parameters *params ) {
-
-    if ( params == nullptr ) {
-        printf ( "Error: cannot print uninitialised parameters.\nTerminating CGP-Library.\n" );
-        exit ( 0 );
-    }
-
-    printf ( "-----------------------------------------------------------\n" );
-    printf ( "                       Parameters                          \n" );
-    printf ( "-----------------------------------------------------------\n" );
-    printf ( "Evolutionary Strategy:\t\t\t(%d%c%d)-ES\n", params->mu, params->evolutionaryStrategy, params->lambda );
-    printf ( "Inputs:\t\t\t\t\t%d\n", params->numInputs );
-    printf ( "Nodes:\t\t\t\t\t%d\n", params->numNodes );
-    printf ( "Outputs:\t\t\t\t%d\n", params->numOutputs );
-    printf ( "Node Arity:\t\t\t\t%d\n", params->arity );
-    printf ( "Connection weights range:\t\t+/- %f\n", params->connectionWeightRange );
-    printf ( "Mutation Type:\t\t\t\t%s\n", params->mutationTypeName );
-    printf ( "Mutation rate:\t\t\t\t%f\n", params->mutationRate );
-    printf ( "Recurrent Connection Probability:\t%f\n", params->recurrentConnectionProbability );
-    printf ( "Shortcut Connections:\t\t\t%d\n", params->shortcutConnections );
-    printf ( "Fitness Function:\t\t\t%s\n", params->fitnessFunctionName );
-    printf ( "Target Fitness:\t\t\t\t%f\n", params->targetFitness );
-    printf ( "Selection scheme:\t\t\t%s\n", params->selectionSchemeName );
-    printf ( "Reproduction scheme:\t\t\t%s\n", params->reproductionSchemeName );
-    printf ( "Update frequency:\t\t\t%d\n", params->updateFrequency );
-    printf ( "Threads:\t\t\t%d\n", params->numThreads );
-    printFunctionSet ( params );
-    printf ( "-----------------------------------------------------------\n\n" );
-}
-
-
-/*
-    Adds the give pre-defined functions to the given function set. The
-    functions must be given in the char array. The function names must
-    be comma separated and contain no spaces i.e. "and,or".
-*/
-DLL_EXPORT void addNodeFunction ( struct parameters *params, char const *functionNames ) {
-
-    char *pch;
-    char functionNamesAsArray [ FUNCTIONNAMELENGTH * FUNCTIONSETSIZE ];
-
-    /* make a local copy of the function names*/
-    strncpy ( functionNamesAsArray, functionNames, FUNCTIONNAMELENGTH * FUNCTIONSETSIZE );
-
-    /* get the first function name */
-    pch = strtok ( functionNamesAsArray, ", " );
-
-    /* while the function names char array contains function names */
-    while ( pch != NULL ) {
-
-        /* add the named function to the function set */
-        addPresetFunctionToFunctionSet ( params, pch );
-
-        /* get the next function name */
-        pch = strtok ( NULL, ", " );
-    }
-
-    /* if the function set is empty give warning */
-    if ( params->funcSet->numFunctions == 0 ) {
-        printf ( "Warning: No Functions added to function set.\n" );
-    }
-}
-
-
-/*
-    Adds given node function to given function set with given name.
-    Disallows exceeding the function set size.
-*/
-DLL_EXPORT void addCustomNodeFunction ( struct parameters *params, double ( *function )( const int numInputs, const double *inputs, const double *weights ), char const *functionName, int maxNumInputs ) {
-
-    if ( params->funcSet->numFunctions >= FUNCTIONSETSIZE ) {
-        printf ( "Warning: functions set has reached maximum capacity (%d). Function '%s' not added.\n", FUNCTIONSETSIZE, functionName );
-        return;
-    }
-
-    /* set the function name as the given function name */
-    strncpy ( params->funcSet->functionNames [ params->funcSet->numFunctions ], functionName, FUNCTIONNAMELENGTH );
-
-    /* set the number of function inputs as the given number of function inputs */
-    params->funcSet->maxNumInputs [ params->funcSet->numFunctions ] = maxNumInputs;
-
-    /* add the given function to the function set */
-    params->funcSet->functions [ params->funcSet->numFunctions ] = function;
-
-    params->funcSet->numFunctions++;
-}
-
-
-/*
-    used as an interface to adding pre-set node functions.
-    returns one if successful, zero otherwise.
-*/
-static int addPresetFunctionToFunctionSet ( struct parameters *params, char const *functionName ) {
-
-    int successfullyAdded = 1;
-
-    /* Symbolic functions */
-
-    if ( strncmp ( functionName, "add", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _add, "add", -1 );
-    }
-    else if ( strncmp ( functionName, "sub", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _sub, "sub", -1 );
-    }
-    else if ( strncmp ( functionName, "mul", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _mul, "mul", -1 );
-    }
-    else if ( strncmp ( functionName, "div", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _divide, "div", -1 );
-    }
-    else if ( strncmp ( functionName, "abs", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _absolute, "abs", 1 );
-    }
-    else if ( strncmp ( functionName, "sqrt", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _squareRoot, "sqrt", 1 );
-    }
-    else if ( strncmp ( functionName, "sq", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _square, "sq", 1 );
-    }
-    else if ( strncmp ( functionName, "cube", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _cube, "cube", 1 );
-    }
-    else if ( strncmp ( functionName, "pow", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _power, "pow", 2 );
-    }
-    else if ( strncmp ( functionName, "exp", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _exponential, "exp", 1 );
-    }
-    else if ( strncmp ( functionName, "sin", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _sine, "sin", 1 );
-    }
-    else if ( strncmp ( functionName, "cos", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _cosine, "cos", 1 );
-    }
-    else if ( strncmp ( functionName, "tan", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _tangent, "tan", 1 );
-    }
-
-
-    /* Boolean logic gates */
-
-    else if ( strncmp ( functionName, "and", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _and, "and", -1 );
-    }
-    else if ( strncmp ( functionName, "nand", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _nand, "nand", -1 );
-    }
-    else if ( strncmp ( functionName, "or", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _or, "or", -1 );
-    }
-    else if ( strncmp ( functionName, "nor", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _nor, "nor", -1 );
-    }
-    else if ( strncmp ( functionName, "xor", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _xor, "xor", -1 );
-    }
-    else if ( strncmp ( functionName, "xnor", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _xnor, "xnor", -1 );
-    }
-    else if ( strncmp ( functionName, "not", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _not, "not", 1 );
-    }
-
-    /* Neuron functions */
-
-    else if ( strncmp ( functionName, "sig", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _sigmoid, "sig", -1 );
-    }
-    else if ( strncmp ( functionName, "gauss", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _gaussian, "gauss", -1 );
-    }
-    else if ( strncmp ( functionName, "step", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _step, "step", -1 );
-    }
-    else if ( strncmp ( functionName, "softsign", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _softsign, "soft", -1 );
-    }
-    else if ( strncmp ( functionName, "tanh", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _hyperbolicTangent, "tanh", -1 );
-    }
-
-    /* other */
-
-    else if ( strncmp ( functionName, "rand", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _randFloat, "rand", 0 );
-    }
-    else if ( strncmp ( functionName, "2", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _constTwo, "2", 0 );
-    }
-    else if ( strncmp ( functionName, "1", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _constOne, "1", 0 );
-    }
-    else if ( strncmp ( functionName, "0", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _constZero, "0", 0 );
-    }
-    else if ( strncmp ( functionName, "pi", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _constPI, "pi", 0 );
-    }
-    else if ( strncmp ( functionName, "wire", FUNCTIONNAMELENGTH ) == 0 ) {
-        addCustomNodeFunction ( params, _wire, "wire", 1 );
-    }
-
-    else {
-        printf ( "Warning: function '%s' is not known and was not added.\n", functionName );
-        successfullyAdded = 0;
-    }
-
-    return successfullyAdded;
-}
-
-
-/*
-    clears the given function set of functions
-*/
-DLL_EXPORT void clearFunctionSet ( struct parameters *params ) {
-    params->funcSet->numFunctions = 0;
-}
 
 
 /*
@@ -1529,22 +1172,6 @@ DLL_EXPORT void setEvolutionaryStrategy ( struct parameters *params, char evolut
 
 
 /*
-    Sets the mutation rate given in parameters. If an invalid mutation
-    rate is given a warning is displayed and the mutation rate is left
-    unchanged.
-*/
-DLL_EXPORT void setMutationRate ( struct parameters *params, double mutationRate ) {
-
-    if ( mutationRate >= 0 and mutationRate <= 1 ) {
-        params->mutationRate = mutationRate;
-    }
-    else {
-        printf ( "\nWarning: mutation rate '%f' is invalid. The mutation rate must be in the range [0,1]. The mutation rate has been left unchanged as '%f'.\n", mutationRate, params->mutationRate );
-    }
-}
-
-
-/*
     Sets the recurrent connection probability given in parameters. If an invalid
     value is given a warning is displayed and the value is left	unchanged.
 */
@@ -1573,14 +1200,6 @@ DLL_EXPORT void setShortcutConnections ( struct parameters *params, int shortcut
     }
 }
 
-
-/*
-    Sets the connection weight range given in parameters.
-*/
-DLL_EXPORT void setConnectionWeightRange ( struct parameters *params, double weightRange ) {
-
-    params->connectionWeightRange = weightRange;
-}
 
 
 /*
@@ -1635,14 +1254,6 @@ DLL_EXPORT void setCustomReproductionScheme ( struct parameters *params, void ( 
     }
 }
 
-
-/*
-    Sets the target fitness
-*/
-DLL_EXPORT void setTargetFitness ( struct parameters *params, double targetFitness ) {
-
-    params->targetFitness = targetFitness;
-}
 
 
 /*
@@ -1702,88 +1313,10 @@ DLL_EXPORT void setUpdateFrequency ( struct parameters *params, int updateFreque
 
 
 
-/*
-    sets num chromosome inputs in parameters
-*/
-DLL_EXPORT void setNumThreads ( struct parameters *params, int numThreads ) {
-
-    /* error checking */
-    if ( numThreads <= 0 ) {
-        printf ( "Error: number threads cannot be less than one; %d is invalid. The number threads is left unchanged as %d.\n", numThreads, numThreads );
-    }
-
-    params->numThreads = numThreads;
-}
-
 
 /*
     chromosome function definitions
 */
-
-
-/*
-    Returns a pointer to an initialised chromosome with values obeying the given parameters.
-*/
-DLL_EXPORT struct chromosome *initialiseChromosome ( struct parameters *params ) {
-
-    struct chromosome *chromo;
-    int i;
-
-    /* check that funcSet contains functions */
-    if ( params->funcSet->numFunctions < 1 ) {
-        printf ( "Error: chromosome not initialised due to empty functionSet.\nTerminating CGP-Library.\n" );
-        exit ( 0 );
-    }
-
-    /* allocate memory for chromosome */
-    chromo = ( struct chromosome* )std::malloc ( sizeof ( struct chromosome ) );
-
-    /* allocate memory for nodes */
-    chromo->nodes = ( struct node** )std::malloc ( params->numNodes * sizeof ( struct node* ) );
-
-    /* allocate memory for outputNodes matrix */
-    chromo->outputNodes = ( int* ) std::malloc ( params->numOutputs * sizeof ( int ) );
-
-    /* allocate memory for active nodes matrix */
-    chromo->activeNodes = ( int* ) std::malloc ( params->numNodes * sizeof ( int ) );
-
-    /* allocate memory for chromosome outputValues */
-    chromo->outputValues = ( double* ) std::malloc ( params->numOutputs * sizeof ( double ) );
-
-    /* Initialise each of the chromosomes nodes */
-    for ( i = 0; i < params->numNodes; i++ ) {
-        chromo->nodes [ i ] = initialiseNode ( params->numInputs, params->numNodes, params->arity, params->funcSet->numFunctions, params->connectionWeightRange, params->recurrentConnectionProbability, i );
-    }
-
-    /* set each of the chromosomes outputs */
-    for ( i = 0; i < params->numOutputs; i++ ) {
-        chromo->outputNodes [ i ] = getRandomChromosomeOutput ( params->numInputs, params->numNodes, params->shortcutConnections );
-    }
-
-    /* set the number of inputs, nodes and outputs */
-    chromo->numInputs = params->numInputs;
-    chromo->numNodes = params->numNodes;
-    chromo->numOutputs = params->numOutputs;
-    chromo->arity = params->arity;
-
-    /* set the number of active node to the number of nodes (all active) */
-    chromo->numActiveNodes = params->numNodes;
-
-    /* set the fitness to initial value */
-    chromo->fitness = -1;
-
-    /* copy the function set from the parameters to the chromosome */
-    chromo->funcSet = ( struct functionSet* )std::malloc ( sizeof ( struct functionSet ) );
-    copyFunctionSet ( chromo->funcSet, params->funcSet );
-
-    /* set the active nodes in the newly generated chromosome */
-    setChromosomeActiveNodes ( chromo );
-
-    /* used interally when exicuting chromosome */
-    chromo->nodeInputsHold = ( double* ) std::malloc ( params->arity * sizeof ( double ) );
-
-    return chromo;
-}
 
 
 /*
@@ -1969,32 +1502,6 @@ DLL_EXPORT struct chromosome *initialiseChromosomeFromChromosome ( struct chromo
 }
 
 
-/*
-    Frees the memory associated with the given chromosome structure
-*/
-DLL_EXPORT void freeChromosome ( struct chromosome *chromo ) {
-
-    int i;
-
-    /* attempt to prevent user double freeing */
-    if ( chromo == NULL ) {
-        printf ( "Warning: double freeing of chromosome prevented.\n" );
-        return;
-    }
-
-    for ( i = 0; i < chromo->numNodes; i++ ) {
-        freeNode ( chromo->nodes [ i ] );
-    }
-
-    free ( chromo->nodeInputsHold );
-    free ( chromo->funcSet );
-    free ( chromo->outputValues );
-    free ( chromo->nodes );
-    free ( chromo->outputNodes );
-    free ( chromo->activeNodes );
-    free ( chromo );
-}
-
 
 
 /*
@@ -2056,86 +1563,6 @@ DLL_EXPORT void printChromosome ( struct chromosome *chromo, int weights ) {
 }
 
 
-
-/*
-    Executes the given chromosome
-*/
-DLL_EXPORT void executeChromosome ( struct chromosome *chromo, const double *inputs ) {
-
-    int i, j;
-    int nodeInputLocation;
-    int currentActiveNode;
-    int currentActiveNodeFunction;
-    int nodeArity;
-
-    const int numInputs = chromo->numInputs;
-    const int numActiveNodes = chromo->numActiveNodes;
-    const int numOutputs = chromo->numOutputs;
-
-    /* error checking */
-    if ( chromo == nullptr ) {
-        printf ( "Error: cannot execute uninitialised chromosome.\n Terminating CGP-Library.\n" );
-        exit ( 0 );
-    }
-
-    /* for all of the active nodes */
-    for ( i = 0; i < numActiveNodes; i++ ) {
-
-        /* get the index of the current active node */
-        currentActiveNode = chromo->activeNodes [ i ];
-
-        /* get the arity of the current node */
-        nodeArity = chromo->nodes [ currentActiveNode ]->actArity;
-
-        /* for each of the active nodes inputs */
-        for ( j = 0; j < nodeArity; j++ ) {
-
-            /* gather the nodes input locations */
-            nodeInputLocation = chromo->nodes [ currentActiveNode ]->inputs [ j ];
-
-            if ( nodeInputLocation < numInputs ) {
-                chromo->nodeInputsHold [ j ] = inputs [ nodeInputLocation ];
-            }
-            else {
-                chromo->nodeInputsHold [ j ] = chromo->nodes [ nodeInputLocation - numInputs ]->output;
-            }
-        }
-
-        /* get the functionality of the active node under evaluation */
-        currentActiveNodeFunction = chromo->nodes [ currentActiveNode ]->function;
-
-        /* calculate the output of the active node under evaluation */
-        chromo->nodes [ currentActiveNode ]->output = chromo->funcSet->functions [ currentActiveNodeFunction ] ( nodeArity, chromo->nodeInputsHold, chromo->nodes [ currentActiveNode ]->weights );
-
-
-        /* deal with doubles becoming NAN */
-        if ( isnan ( chromo->nodes [ currentActiveNode ]->output ) != 0 ) {
-            chromo->nodes [ currentActiveNode ]->output = 0;
-        }
-
-        /* prevent double form going to inf and -inf */
-        else if ( isinf ( chromo->nodes [ currentActiveNode ]->output ) != 0 ) {
-
-            if ( chromo->nodes [ currentActiveNode ]->output > 0 ) {
-                chromo->nodes [ currentActiveNode ]->output = DBL_MAX;
-            }
-            else {
-                chromo->nodes [ currentActiveNode ]->output = DBL_MIN;
-            }
-        }
-    }
-
-    /* Set the chromosome outputs */
-    for ( i = 0; i < numOutputs; i++ ) {
-
-        if ( chromo->outputNodes [ i ] < numInputs ) {
-            chromo->outputValues [ i ] = inputs [ chromo->outputNodes [ i ] ];
-        }
-        else {
-            chromo->outputValues [ i ] = chromo->nodes [ chromo->outputNodes [ i ] - numInputs ]->output;
-        }
-    }
-}
 
 /*
     used to access the chromosome outputs after executeChromosome
@@ -2227,496 +1654,6 @@ DLL_EXPORT void saveChromosome ( struct chromosome *chromo, char const *fileName
 
     fclose ( fp );
 }
-
-
-/*
-    save the given chromosome to a graphviz .dot file
-    (www.graphviz.org/‎)
-*/
-DLL_EXPORT void saveChromosomeDot ( struct chromosome *chromo, int weights, char const *fileName ) {
-
-    int i, j;
-    FILE *fp;
-
-    char colour [ 20 ];
-    char weight [ 20 ];
-
-    fp = fopen ( fileName, "w" );
-
-    if ( fp == NULL ) {
-        return;
-    }
-
-    /* */
-    fprintf ( fp, "digraph NeuralNetwork {\n" );
-
-    /* landscape, square and centre */
-    fprintf ( fp, "rankdir=LR;\n" );
-    fprintf ( fp, "size=\"4,3\";\n" );
-    fprintf ( fp, "center = true;\n" );
-
-    /* for all the inputs */
-    for ( i = 0; i < getNumChromosomeInputs ( chromo ); i++ ) {
-
-        fprintf ( fp, "node%d [label=\"(%d) Input\", color=black, labelfontcolor=black, fontcolor=black];\n", i, i );
-    }
-
-    /* for all nodes */
-    for ( i = 0; i < getNumChromosomeNodes ( chromo ); i++ ) {
-
-        if ( chromo->nodes [ i ]->active == 1 ) {
-            strncpy ( colour, "black", 20 );
-        }
-        else {
-            strncpy ( colour, "lightgrey", 20 );
-        }
-
-        fprintf ( fp, "node%d [label=\"(%d) %s\", color=%s, labelfontcolor=%s, fontcolor=%s];\n", i + getNumChromosomeInputs ( chromo ), i + getNumChromosomeInputs ( chromo ), chromo->funcSet->functionNames [ chromo->nodes [ i ]->function ], colour, colour, colour );
-
-        /* for each node input */
-        for ( j = 0; j < getChromosomeNodeArity ( chromo, i ); j++ ) {
-
-            if ( weights == 1 ) {
-                snprintf ( weight, 20, "%.2f", chromo->nodes [ i ]->weights [ j ] );
-            }
-            else {
-                snprintf ( weight, 20, " (%d)", j );
-            }
-
-
-            fprintf ( fp, "node%d -> node%d [label=\"%s\", labelfontcolor=%s, fontcolor=%s, bold=true, color=%s];\n", chromo->nodes [ i ]->inputs [ j ], i + getNumChromosomeInputs ( chromo ), weight, colour, colour, colour );
-        }
-    }
-
-    for ( i = 0; i < getNumChromosomeOutputs ( chromo ); i++ ) {
-
-        fprintf ( fp, "node%d [label=\"Output %d\", color=black, labelfontcolor=black, fontcolor=black];\n", i + getNumChromosomeInputs ( chromo ) + getNumChromosomeNodes ( chromo ), i );
-
-        fprintf ( fp, "node%d -> node%d [labelfontcolor=black, fontcolor=black, bold=true, color=black];\n", chromo->outputNodes [ i ], i + getNumChromosomeInputs ( chromo ) + getNumChromosomeNodes ( chromo ) );
-    }
-
-
-    /* place inputs  on same line */
-    fprintf ( fp, "{ rank = source;" );
-
-    for ( i = 0; i < getNumChromosomeInputs ( chromo ); i++ ) {
-        fprintf ( fp, " \"node%d\";", i );
-    }
-    fprintf ( fp, " }\n" );
-
-
-    /* place outputs  on same line */
-    fprintf ( fp, "{ rank = max;" );
-
-    for ( i = 0; i < getNumChromosomeOutputs ( chromo ); i++ ) {
-        fprintf ( fp, "\"node%d\";", i + getNumChromosomeInputs ( chromo ) + getNumChromosomeNodes ( chromo ) );
-    }
-    fprintf ( fp, " }\n" );
-
-
-    /* last line of dot file */
-    fprintf ( fp, "}" );
-
-    fclose ( fp );
-}
-
-
-/*
-    save the given chromosome as a latex equation
-
-    Only compatible with feed-forward networks
-    Only fully compatible with custom node functions
-*/
-DLL_EXPORT void saveChromosomeLatex ( struct chromosome *chromo, int weights, char const *fileName ) {
-
-    int output;
-    int i;
-    FILE *fp;
-
-    fp = fopen ( fileName, "w" );
-
-    if ( fp == NULL ) {
-        return;
-    }
-
-    /* document header */
-    fprintf ( fp, "\\documentclass{article}\n" );
-    fprintf ( fp, "\\begin{document}\n" );
-
-    for ( output = 0; output < chromo->numOutputs; output++ ) {
-
-        fprintf ( fp, "\\begin{equation}\n" );
-
-        /* function inputs */
-        if ( chromo->numInputs == 0 ) {
-            fprintf ( fp, "f()=" );
-        }
-        else {
-
-            fprintf ( fp, "f_%d(x_0", output );
-
-            for ( i = 1; i < chromo->numInputs; i++ ) {
-
-                fprintf ( fp, ",x_%d", i );
-            }
-
-            fprintf ( fp, ")=" );
-        }
-
-        saveChromosomeLatexRecursive ( chromo, chromo->outputNodes [ output ], fp );
-
-        fprintf ( fp, "\n\\end{equation}" );
-    }
-
-
-    /* document footer */
-    fprintf ( fp, "\n\\end{document}" );
-
-    fclose ( fp );
-}
-
-/*
-    used by saveChromosomeLatex
-*/
-static void saveChromosomeLatexRecursive ( struct chromosome *chromo, int index, FILE *fp ) {
-
-    int i;
-
-    if ( index < chromo->numInputs ) {
-        fprintf ( fp, "x_%d", index );
-        return;
-    }
-
-    /* add */
-    if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "add", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, "\\left(" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        for ( i = 1; i < getChromosomeNodeArity ( chromo, index - chromo->numInputs ); i++ ) {
-
-            fprintf ( fp, " + " );
-
-            saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ i ], fp );
-        }
-
-        fprintf ( fp, "\\right)" );
-    }
-
-
-    /* sub */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "sub", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, "\\left(" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        for ( i = 1; i < getChromosomeNodeArity ( chromo, index - chromo->numInputs ); i++ ) {
-
-            fprintf ( fp, " - " );
-
-            saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ i ], fp );
-        }
-
-        fprintf ( fp, "\\right)" );
-    }
-
-    /* mul */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "mul", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, "\\left(" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        for ( i = 1; i < getChromosomeNodeArity ( chromo, index - chromo->numInputs ); i++ ) {
-
-            fprintf ( fp, " \\times " );
-
-            saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ i ], fp );
-        }
-
-        fprintf ( fp, "\\right)" );
-    }
-
-    /* div (change to frac)*/
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "div", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        if ( getChromosomeNodeArity ( chromo, index - chromo->numInputs ) == 1 ) {
-            saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-        }
-        else {
-
-            for ( i = 0; i < getChromosomeNodeArity ( chromo, index - chromo->numInputs ); i++ ) {
-
-                if ( i + 1 < getChromosomeNodeArity ( chromo, index - chromo->numInputs ) ) {
-                    fprintf ( fp, "\\frac{" );
-                    saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ i ], fp );
-                    fprintf ( fp, "}{" );
-                }
-                else if ( i + 1 == getChromosomeNodeArity ( chromo, index - chromo->numInputs ) and getChromosomeNodeArity ( chromo, index - chromo->numInputs ) > 2 ) {
-                    saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ i ], fp );
-                    fprintf ( fp, "}}" );
-                }
-                else {
-                    saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ i ], fp );
-                    fprintf ( fp, "}" );
-                }
-            }
-        }
-    }
-
-    /* abs */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "abs", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, " \\left|" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        fprintf ( fp, " \\right|" );
-
-    }
-
-    /* sqrt */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "sqrt", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, " \\sqrt{" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        fprintf ( fp, " }" );
-
-    }
-
-
-    /* sq */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "sq", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, " (" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        fprintf ( fp, " )^2" );
-
-    }
-
-    /* cube */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "cube", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, " (" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        fprintf ( fp, " )^3" );
-
-    }
-
-    /* exp */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "exp", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, " e^{" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        fprintf ( fp, " }" );
-
-    }
-
-    /* sin */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "sin", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, "\\sin(" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        fprintf ( fp, " )" );
-
-    }
-
-    /* cos */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "cos", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, " \\cos(" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        fprintf ( fp, " )" );
-
-    }
-
-    /* tan */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "tan", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, " \\tan(" );
-
-        saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ 0 ], fp );
-
-        fprintf ( fp, " )" );
-
-    }
-
-    /* rand */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "rand", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, " rand()" );
-    }
-
-    /* pi */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "pi", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, "\\pi" );
-    }
-
-    /* 0 */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "0", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, " 0" );
-    }
-
-    /* 1 */
-    else if ( strncmp ( chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ], "1", FUNCTIONNAMELENGTH ) == 0 ) {
-
-        fprintf ( fp, " 1" );
-    }
-
-    /* other */
-    else {
-
-        fprintf ( fp, "%s(", chromo->funcSet->functionNames [ chromo->nodes [ index - chromo->numInputs ]->function ] );
-
-        for ( i = 0; i < getChromosomeNodeArity ( chromo, index - chromo->numInputs ); i++ ) {
-
-            saveChromosomeLatexRecursive ( chromo, chromo->nodes [ index - chromo->numInputs ]->inputs [ i ], fp );
-
-            if ( i < getChromosomeNodeArity ( chromo, index - chromo->numInputs ) - 1 )
-                fprintf ( fp, ", " );
-        }
-
-        fprintf ( fp, ")" );
-    }
-
-}
-
-DLL_EXPORT int compareChromosomes ( struct chromosome *chromoA, struct chromosome *chromoB ) {
-
-    int i, j;
-
-    /* ensure that the chromosomes don't point to NULL */
-    if ( chromoA == NULL or chromoB == NULL ) {
-        return 0;
-    }
-
-    /* Check the high level parameters */
-    if ( chromoA->numInputs != chromoB->numInputs ) {
-        return 0;
-    }
-
-    if ( chromoA->numNodes != chromoB->numNodes ) {
-        return 0;
-    }
-
-    if ( chromoA->numOutputs != chromoB->numOutputs ) {
-        return 0;
-    }
-
-    if ( chromoA->arity != chromoB->arity ) {
-        return 0;
-    }
-
-    /* for each node*/
-    for ( i = 0; i < chromoA->numNodes; i++ ) {
-
-        /* Check the function genes */
-        if ( chromoA->nodes [ i ]->function != chromoB->nodes [ i ]->function ) {
-            return 0;
-        }
-
-        /* for each node input */
-        for ( j = 0; j < chromoA->arity; j++ ) {
-
-            /* Check the node inputs */
-            if ( chromoA->nodes [ i ]->inputs [ j ] != chromoB->nodes [ i ]->inputs [ j ] ) {
-                return 0;
-            }
-        }
-    }
-
-    /* for all of the outputs */
-    for ( i = 0; i < chromoA->numOutputs; i++ ) {
-
-        /* Check the outputs */
-        if ( chromoA->outputNodes [ i ] != chromoB->outputNodes [ i ] ) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-
-DLL_EXPORT int compareChromosomesANN ( struct chromosome *chromoA, struct chromosome *chromoB ) {
-
-    int i, j;
-
-    /* ensure that the chromosomes don't point to NULL */
-    if ( chromoA == NULL or chromoB == NULL ) {
-        return 0;
-    }
-
-    /* Check the high level parameters */
-    if ( chromoA->numInputs != chromoB->numInputs ) {
-        return 0;
-    }
-
-    if ( chromoA->numNodes != chromoB->numNodes ) {
-        return 0;
-    }
-
-    if ( chromoA->numOutputs != chromoB->numOutputs ) {
-        return 0;
-    }
-
-    if ( chromoA->arity != chromoB->arity ) {
-        return 0;
-    }
-
-    /* for each node*/
-    for ( i = 0; i < chromoA->numNodes; i++ ) {
-
-        /* Check the function genes */
-        if ( chromoA->nodes [ i ]->function != chromoB->nodes [ i ]->function ) {
-            return 0;
-        }
-
-        /* for each node input */
-        for ( j = 0; j < chromoA->arity; j++ ) {
-
-            /* Check the node inputs */
-            if ( chromoA->nodes [ i ]->inputs [ j ] != chromoB->nodes [ i ]->inputs [ j ] ) {
-                return 0;
-            }
-
-            /* Check the connection weights inputs */
-            if ( chromoA->nodes [ i ]->weights [ j ] != chromoB->nodes [ i ]->weights [ j ] ) {
-                return 0;
-            }
-        }
-    }
-
-    /* for all of the outputs */
-    for ( i = 0; i < chromoA->numOutputs; i++ ) {
-
-        /* Check the outputs */
-        if ( chromoA->outputNodes [ i ] != chromoB->outputNodes [ i ] ) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-
-
 
 
 
@@ -3611,65 +2548,6 @@ DLL_EXPORT double getMedianActiveNodes ( struct results *rels ) {
 }
 
 
-static double medianInt ( const int *anArray, const int length ) {
-
-    int i;
-    int *copyArray = ( int* ) std::malloc ( length * sizeof ( int ) );
-    double median;
-
-    /* make a copy of the array */
-    for ( i = 0; i < length; i++ ) {
-        copyArray [ i ] = anArray [ i ];
-    }
-
-    /* sort the copy array */
-    sortIntArray ( copyArray, length );
-
-    /* if even */
-    if ( length % 2 == 0 ) {
-        median = ( copyArray [ ( length / 2 ) ] + copyArray [ ( length / 2 ) - 1 ] ) / 2;
-    }
-
-    /* if odd */
-    else {
-        median = copyArray [ ( length - 1 ) / 2 ];
-    }
-
-    free ( copyArray );
-
-    return median;
-}
-
-static double medianDouble ( const double *anArray, const int length ) {
-
-    int i;
-    double *copyArray = ( double* ) std::malloc ( length * sizeof ( double ) );
-    double median;
-
-    /* make a copy of the array */
-    for ( i = 0; i < length; i++ ) {
-        copyArray [ i ] = anArray [ i ];
-    }
-
-    /* sort the copy array */
-    sortDoubleArray ( copyArray, length );
-
-    /* if even */
-    if ( length % 2 == 0 ) {
-        median = ( copyArray [ ( length / 2 ) ] + copyArray [ ( length / 2 ) - 1 ] ) / 2;
-    }
-
-    /* if odd */
-    else {
-        median = copyArray [ ( length - 1 ) / 2 ];
-    }
-
-    free ( copyArray );
-
-    return median;
-}
-
-
 
 /*
     returns the average chromosome fitness from repeated
@@ -4023,53 +2901,6 @@ static void singleMutation ( struct parameters *params, struct chromosome *chrom
 }
 
 
-/*
-    Conductions probabilistic mutation on the given chromosome. Each chromosome
-    gene is changed to a random valid allele with a probability specified in
-    parameters.
-*/
-static void probabilisticMutation ( struct parameters *params, struct chromosome *chromo ) {
-
-    int i, j;
-
-    /* for every nodes in the chromosome */
-    for ( i = 0; i < params->numNodes; i++ ) {
-
-        /* mutate the function gene */
-        if ( randDecimal ( ) <= params->mutationRate ) {
-            chromo->nodes [ i ]->function = getRandomFunction ( chromo->funcSet->numFunctions );
-        }
-
-        /* for every input to each chromosome */
-        for ( j = 0; j < params->arity; j++ ) {
-
-
-            if ( chromo->numNodes != params->numNodes )
-                std::cout << "numNodes differ\n";
-            if ( chromo->numInputs != params->numInputs )
-                std::cout << "numInputs differ\n";
-
-            /* mutate the node input */
-            if ( randDecimal ( ) <= params->mutationRate ) {
-                chromo->nodes [ i ]->inputs [ j ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, i, params->recurrentConnectionProbability );
-            }
-
-            /* mutate the node connection weight */
-            if ( randDecimal ( ) <= params->mutationRate ) {
-                chromo->nodes [ i ]->weights [ j ] = getRandomConnectionWeight ( params->connectionWeightRange );
-            }
-        }
-    }
-
-    /* for every chromosome output */
-    for ( i = 0; i < params->numOutputs; i++ ) {
-
-        /* mutate the chromosome output */
-        if ( randDecimal ( ) <= params->mutationRate ) {
-            chromo->outputNodes [ i ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params->shortcutConnections );
-        }
-    }
-}
 
 /*
     Conductions probabilistic mutation on the active nodes in the given
@@ -4114,15 +2945,6 @@ static void probabilisticMutationOnlyActive ( struct parameters *params, struct 
             chromo->outputNodes [ i ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params->shortcutConnections );
         }
     }
-}
-
-
-
-/*
-    Sets the random number seed
-*/
-DLL_EXPORT void setRandomNumberSeed ( unsigned int seed ) {
-    srand ( seed );
 }
 
 
@@ -4368,47 +3190,6 @@ static void getBestChromosome ( struct chromosome **parents, struct chromosome *
     copyChromosome ( best, bestChromoSoFar );
 }
 
-
-/*
-    copies the contents of funcSetSrc to funcSetDest
-*/
-static void copyFunctionSet ( struct functionSet *funcSetDest, struct functionSet *funcSetSrc ) {
-
-    int i;
-
-    funcSetDest->numFunctions = funcSetSrc->numFunctions;
-
-    for ( i = 0; i < funcSetDest->numFunctions; i++ ) {
-        strncpy ( funcSetDest->functionNames [ i ], funcSetSrc->functionNames [ i ], FUNCTIONNAMELENGTH );
-        funcSetDest->functions [ i ] = funcSetSrc->functions [ i ];
-        funcSetDest->maxNumInputs [ i ] = funcSetSrc->maxNumInputs [ i ];
-    }
-}
-
-
-/*
-    copys the contents from the src node into dest node.
-*/
-static void copyNode ( struct node *nodeDest, struct node *nodeSrc ) {
-
-    int i;
-
-    /* copy the node's function */
-    nodeDest->function = nodeSrc->function;
-
-    /* copy active flag */
-    nodeDest->active = nodeSrc->active;
-
-    /* copy the node arity */
-    nodeDest->maxArity = nodeSrc->maxArity;
-    nodeDest->actArity = nodeSrc->actArity;
-
-    /* copy the nodes inputs and connection weights */
-    for ( i = 0; i < nodeSrc->maxArity; i++ ) {
-        nodeDest->inputs [ i ] = nodeSrc->inputs [ i ];
-        nodeDest->weights [ i ] = nodeSrc->weights [ i ];
-    }
-}
 
 
 /*
