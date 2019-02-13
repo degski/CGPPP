@@ -42,7 +42,7 @@
 #define nl '\n'
 #endif
 
-#include "cgpcpp.hpp"
+#include "../include/cgpcpp.hpp"
 
 
 int main ( ) {

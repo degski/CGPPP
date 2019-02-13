@@ -634,6 +634,8 @@ struct Chromosome {
         return functionArity == -1 or arity < functionArity ? arity : functionArity;
     }
 
+    // Output.
+
     void print ( const bool weights_ ) noexcept {
         // Set the active nodes in the given chromosome.
         setChromosomeActiveNodes ( );
