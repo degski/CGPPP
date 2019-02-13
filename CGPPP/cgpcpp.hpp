@@ -591,7 +591,6 @@ struct Chromosome {
         }
     }
 
-
     // Set the active nodes in the given chromosome.
     void setChromosomeActiveNodes ( ) noexcept {
         // Set the number of active nodes to zero.
@@ -623,16 +622,51 @@ struct Chromosome {
         activeNodes [ numActiveNodes ] = nodeIndex_;
         ++numActiveNodes;
         // Set the nodes actual arity.
-        nodes [ nodeIndex_ ].actArity = getChromosomeNodeArity ( nodeIndex_ );
+        nodes [ nodeIndex_ ].actArity = getChromosomeNodeArity ( nodes [ nodeIndex_ ] );
         // Recursively log all the nodes to which the current nodes connect as active.
         for ( int i = 0; i < nodes [ nodeIndex_ ].actArity; ++i )
             recursivelySetActiveNodes ( nodes [ nodeIndex_ ].inputs [ i ] );
     }
 
     // Gets the chromosome node arity.
-    [[ nodiscard ]] int getChromosomeNodeArity ( const int index_ ) {
-        const int functionArity = params.funcSet.maxNumInputs [ nodes [ index_ ].function ];
+    [[ nodiscard ]] int getChromosomeNodeArity ( const Node<Real> & node_ ) {
+        const int functionArity = params.funcSet.maxNumInputs [ node_.function ];
         return functionArity == -1 or arity < functionArity ? arity : functionArity;
+    }
+
+    void print ( const bool weights_ ) noexcept {
+        // Set the active nodes in the given chromosome.
+        setChromosomeActiveNodes ( );
+        // For all the chromo inputs.
+        int i = 0;
+        for ( ; i < numInputs; ++i ) {
+            std::printf ( "(%d):\tinput\n", i );
+        }
+        // For all the hidden nodes.
+        for ( auto & node : nodes ) {
+            // Print the node function.
+            std::printf ( "(%d):\t%s\t", i, params.funcSet.functionNames [ node.function ] );
+            // For the arity of the node.
+            for ( int j = 0; j < getChromosomeNodeArity ( node ); ++j ) {
+                // Print the node input information.
+                if ( weights_ )
+                    std::printf ( "%d,%+.1f\t", node.inputs [ j ], node.weights [ j ] );
+                else
+                    std::printf ( "%d ", node.inputs [ j ] );
+            }
+            // Highlight active nodes.
+            if ( node.active )
+                std::printf ( "*" );
+            std::printf ( "\n" );
+            ++i;
+        }
+        // For all of the outputs.
+        std::printf ( "outputs: " );
+        for ( const int outputNode : outputNodes ) {
+            // Print the output node locations.
+            std::printf ( "%d ", outputNode );
+        }
+        std::printf ( "\n\n" );
     }
 };
 
@@ -1500,68 +1534,6 @@ DLL_EXPORT struct chromosome *initialiseChromosomeFromChromosome ( struct chromo
 
     return chromoNew;
 }
-
-
-
-
-/*
-    Prints the given chromosome to the screen
-*/
-DLL_EXPORT void printChromosome ( struct chromosome *chromo, int weights ) {
-
-    int i, j;
-
-    /* error checking */
-    if ( chromo == nullptr ) {
-        printf ( "Error: chromosome has not been initialised and cannot be printed.\n" );
-        return;
-    }
-
-    /* set the active nodes in the given chromosome */
-    setChromosomeActiveNodes ( chromo );
-
-    /* for all the chromo inputs*/
-    for ( i = 0; i < chromo->numInputs; i++ ) {
-        printf ( "(%d):\tinput\n", i );
-    }
-
-    /* for all the hidden nodes */
-    for ( i = 0; i < chromo->numNodes; i++ ) {
-
-        /* print the node function */
-        printf ( "(%d):\t%s\t", chromo->numInputs + i, chromo->funcSet->functionNames [ chromo->nodes [ i ]->function ] );
-
-        /* for the arity of the node */
-        for ( j = 0; j < getChromosomeNodeArity ( chromo, i ); j++ ) {
-
-            /* print the node input information */
-            if ( weights == 1 ) {
-                printf ( "%d,%+.1f\t", chromo->nodes [ i ]->inputs [ j ], chromo->nodes [ i ]->weights [ j ] );
-            }
-            else {
-                printf ( "%d ", chromo->nodes [ i ]->inputs [ j ] );
-            }
-        }
-
-        /* Highlight active nodes */
-        if ( chromo->nodes [ i ]->active == 1 ) {
-            printf ( "*" );
-        }
-
-        printf ( "\n" );
-    }
-
-    /* for all of the outputs */
-    printf ( "outputs: " );
-    for ( i = 0; i < chromo->numOutputs; i++ ) {
-
-        /* print the output node locations */
-        printf ( "%d ", chromo->outputNodes [ i ] );
-    }
-
-    printf ( "\n\n" );
-}
-
 
 
 /*
