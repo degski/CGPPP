@@ -79,7 +79,7 @@ namespace cgp {
 // https://stackoverflow.com/questions/18728257/back-emplacer-implementation-default-operator-vs-universal-reference-version
 
 template<typename Container>
-class back_emplace_iterator : public std::iterator< std::output_iterator_tag, void, void, void, void> {
+class back_emplace_iterator : public std::iterator<std::output_iterator_tag, void, void, void, void> {
 
     protected:
 
@@ -92,7 +92,7 @@ class back_emplace_iterator : public std::iterator< std::output_iterator_tag, vo
     explicit back_emplace_iterator ( Container & x ) noexcept : container ( & x ) { }
 
     template<typename T>
-    using _not_self = std::enable_if_t<not(std::is_same_v<std::decay_t<T>, back_emplace_iterator>)>;
+    using _not_self = std::enable_if_t<std::negation<std::is_same<std::decay_t<T>, back_emplace_iterator>>::value>;
 
     template<typename T, typename = _not_self<T>>
     [[ maybe_unused ]] back_emplace_iterator<Container> & operator = ( T && t ) {
