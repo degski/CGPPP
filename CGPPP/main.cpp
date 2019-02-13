@@ -47,13 +47,13 @@
 
 int main ( ) {
 
-    cgp::FunctionSet<> fs;
+    cgp::Parameters<float> p { 2, 32, 1, 2 };
 
-    fs.addNodeFunction ( "add", "mul", "sub", "tanh" );
+    const cgp::Node<float> n1 ( p, 0 );
 
-    fs.print ( );
+    cgp::Node<float> n2 = n1;
 
-    std::cout << sizeof ( cgp::Node<float> ) << ' ' << sizeof ( cgp::NodeArray<int> ) << ' ' << cgp::FunctionSet<>::sizeBuiltinFunctionSet ( ) << nl;
+    std::cout << n1.inputs [ 1 ] << ' ' << n2.inputs [ 1 ] << nl;
 
     return EXIT_SUCCESS;
 }
