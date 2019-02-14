@@ -49,7 +49,7 @@
 #endif
 
 
-namespace cgp {
+namespace cgp::rng {
 
 
     #if M64
@@ -68,4 +68,8 @@ namespace cgp {
         }
     #endif
 
-} // namespace cgp
+} // namespace cgp::rng
+
+
+#undef M64
+#undef M32
