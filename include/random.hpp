@@ -48,14 +48,14 @@ namespace rnd {
 using Rng = mcg128_fast;
 [[ nodiscard ]] __uint128_t os_seed ( ) noexcept {
     std::random_device rd;
-    auto rnd = [ &rd ] ( const int shift ) { return static_cast< __uint128_t > ( rd ( ) ) << shift; };
+    auto rnd = [ & rd ] ( const int shift ) { return static_cast<__uint128_t> ( rd ( ) ) << shift; };
     return rnd ( 96 ) | rnd ( 64 ) | rnd ( 32 ) | rnd ( 0 );
 }
 #else
 using Rng = splitmix64;
 [[ nodiscard ]] std::uint64_t os_seed ( ) noexcept {
     std::random_device rd;
-    auto rnd = [ &rd ] ( const int shift ) { return static_cast< std::uint64_t > ( rd ( ) ) << shift; };
+    auto rnd = [ & rd ] ( const int shift ) { return static_cast<std::uint64_t> ( rd ( ) ) << shift; };
     return rnd ( 32 ) | rnd ( 0 );
 }
 #endif
