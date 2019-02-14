@@ -188,7 +188,7 @@ struct Parameters {
     }
 
     [[ nodiscard ]] bool mutate ( ) const noexcept {
-        return mutationDistribution ( rng );
+        return mutationDistribution ( rnd::rng );
     }
 
     [[ nodiscard ]] int getRandomFunction ( ) const noexcept {
@@ -196,16 +196,16 @@ struct Parameters {
     }
 
     [[ nodiscard ]] Real getRandomConnectionWeight ( ) const noexcept {
-        return std::uniform_real_distribution<Real> ( -connectionWeightRange, connectionWeightRange ) ( rng );
+        return std::uniform_real_distribution<Real> ( -connectionWeightRange, connectionWeightRange ) ( rnd::rng );
     }
 
     [[ nodiscard ]] int getRandomNodeInput ( const Chromosome<Real> & chromo_, const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( rng ) ?
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( rnd::rng ) ?
             Parameters::randInt ( chromo_.numNodes - nodePosition_ ) + nodePosition_ + chromo_.numInputs :
             Parameters::randInt ( chromo_.numInputs + nodePosition_ );
     }
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( rng ) ?
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( rnd::rng ) ?
             Parameters::randInt ( numNodes - nodePosition_ ) + nodePosition_ + numInputs :
             Parameters::randInt ( numInputs + nodePosition_ );
     }
@@ -222,11 +222,11 @@ struct Parameters {
     [[ nodiscard ]] static int randInt ( const int n_ ) noexcept {
         if ( not ( n_ ) )
             return 0;
-        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( rng );
+        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( rnd::rng );
     }
 
     void seedRng ( const std::uint64_t s_ = 0u ) noexcept {
-        rng.seed ( s_ ? s_ : getSystemSeed ( ) );
+        rnd::rng.seed ( s_ ? s_ : rnd::os_seed ( ) );
     }
 
     // Output.

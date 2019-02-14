@@ -41,19 +41,19 @@
 #include <singleton.hpp>    // https://github.com/degski/Sax/blob/master/singleton.hpp
 
 
-namespace cgp {
+namespace rnd {
 
 #if UINTPTR_MAX == 0xFFFF'FFFF'FFFF'FFFF
 #if defined ( __clang__ ) or defined ( __GNUC__ )
 using Rng = mcg128_fast;
-[[ nodiscard ]] __uint128_t getSystemSeed ( ) noexcept {
+[[ nodiscard ]] __uint128_t os_seed ( ) noexcept {
     std::random_device rd;
     auto rnd = [ &rd ] ( const int shift ) { return static_cast< __uint128_t > ( rd ( ) ) << shift; };
     return rnd ( 96 ) | rnd ( 64 ) | rnd ( 32 ) | rnd ( 0 );
 }
 #else
 using Rng = splitmix64;
-[[ nodiscard ]] std::uint64_t getSystemSeed ( ) noexcept {
+[[ nodiscard ]] std::uint64_t os_seed ( ) noexcept {
     std::random_device rd;
     auto rnd = [ &rd ] ( const int shift ) { return static_cast< std::uint64_t > ( rd ( ) ) << shift; };
     return rnd ( 32 ) | rnd ( 0 );
@@ -61,7 +61,7 @@ using Rng = splitmix64;
 #endif
 #elif UINTPTR_MAX == 0xFFFF'FFFF
 using Rng = std::minstd_rand;
-[[ nodiscard ]] std::uint32_t getSystemSeed ( ) noexcept {
+[[ nodiscard ]] std::uint32_t os_seed ( ) noexcept {
     return std::random_device { } ( );
 }
 #else
@@ -70,9 +70,9 @@ using Rng = std::minstd_rand;
 
 namespace detail {
 singleton<Rng> rng;
-auto seedFromSystem = [ ] { const auto s = getSystemSeed ( ); rng.instance ( ).seed ( s ); return s; } ( );
+auto seed_from_os = [ ] { const auto s = os_seed ( ); rng.instance ( ).seed ( s ); return s; } ( );
 }
 
 auto rng = [ ] { return detail::rng.instance ( ); } ( );
 
-} // namespace cgp
+} // namespace rnd
