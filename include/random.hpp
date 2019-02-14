@@ -60,6 +60,7 @@ using Rng = mcg128_fast;
 using Rng = splitmix64;
 #endif
 [[ nodiscard ]] std::uint64_t getSystemSeed ( ) noexcept {
+    std::cout << "init\n";
     return static_cast<std::uint64_t> ( std::random_device { } ( ) ) << 32 | static_cast<std::uint64_t> ( std::random_device { } ( ) );
 }
 #else
@@ -71,10 +72,9 @@ using Rng = std::minstd_rand;
 
 singleton<Rng> rng;
 
-auto lambda = [ ] { rng.instance ( ).seed ( getSystemSeed ( ) ); return EXIT_SUCCESS; } ( );
+auto seedFromSystem = [ ] { const auto s = getSystemSeed ( ); rng.instance ( ).seed ( s ); return s; } ( );
 
 } // namespace cgp
-
 
 #undef M64
 #undef M32

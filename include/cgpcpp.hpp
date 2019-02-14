@@ -188,7 +188,7 @@ struct Parameters {
     }
 
     [[ nodiscard ]] bool mutate ( ) const noexcept {
-        return mutationDistribution ( cgp::rng.instance ( ) );
+        return mutationDistribution ( rng.instance ( ) );
     }
 
     [[ nodiscard ]] int getRandomFunction ( ) const noexcept {
@@ -196,16 +196,16 @@ struct Parameters {
     }
 
     [[ nodiscard ]] Real getRandomConnectionWeight ( ) const noexcept {
-        return std::uniform_real_distribution<Real> ( -connectionWeightRange, connectionWeightRange ) ( cgp::rng.instance ( ) );
+        return std::uniform_real_distribution<Real> ( -connectionWeightRange, connectionWeightRange ) ( rng.instance ( ) );
     }
 
     [[ nodiscard ]] int getRandomNodeInput ( const Chromosome<Real> & chromo_, const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( cgp::rng.instance ( ) ) ?
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( rng.instance ( ) ) ?
             Parameters::randInt ( chromo_.numNodes - nodePosition_ ) + nodePosition_ + chromo_.numInputs :
             Parameters::randInt ( chromo_.numInputs + nodePosition_ );
     }
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( cgp::rng.instance ( ) ) ?
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( rng.instance ( ) ) ?
             Parameters::randInt ( numNodes - nodePosition_ ) + nodePosition_ + numInputs :
             Parameters::randInt ( numInputs + nodePosition_ );
     }
@@ -222,11 +222,11 @@ struct Parameters {
     [[ nodiscard ]] static int randInt ( const int n_ ) noexcept {
         if ( not ( n_ ) )
             return 0;
-        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( cgp::rng.instance ( ) );
+        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( rng.instance ( ) );
     }
 
-    void seedRng ( const std::uint64_t s_ ) noexcept {
-        rng.instance ( ).seed ( s_ );
+    void seedRng ( const std::uint64_t s_ = 0u ) noexcept {
+        rng.instance ( ).seed ( s_ ? s_ : getSystemSeed ( ) );
     }
 
     // Output.
