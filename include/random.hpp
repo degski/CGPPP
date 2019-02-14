@@ -69,12 +69,10 @@ using Rng = std::minstd_rand;
 #endif
 
 namespace detail {
-
 singleton<Rng> rng;
-
 auto seedFromSystem = [ ] { const auto s = getSystemSeed ( ); rng.instance ( ).seed ( s ); return s; } ( );
 }
 
-auto rng = [ ] ( ) -> Rng & { return detail::rng.instance ( ); } ( );
+auto rng = [ ] { return detail::rng.instance ( ); } ( );
 
 } // namespace cgp
