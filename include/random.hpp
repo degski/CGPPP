@@ -41,34 +41,39 @@
 #endif
 
 #if M64
-#if defined ( __GNUC__ )
+#if defined ( __clang__ ) or defined ( __GNUC__ )
 #include <lehmer.hpp>       // https://github.com/degski/Sax/blob/master/lehmer.hpp
 #else
 #include <splitmix.hpp>     // https://github.com/degski/Sax/blob/master/splitmix.hpp
 #endif
 #endif
 
+#include <singleton.hpp>    // https://github.com/degski/Sax/blob/master/singleton.hpp
 
-namespace cgp::rng {
 
+namespace cgp {
 
-    #if M64
-    #ifdef __GNUC__
-        using Rng = mcg128_fast;
-    #else
-        using Rng = splitmix64;
-    #endif
-        [[ nodiscard ]] std::uint64_t getSystemSeed ( ) noexcept {
-            return static_cast<std::uint64_t> ( std::random_device { } ( ) ) << 32 | static_cast<std::uint64_t> ( std::random_device { } ( ) );
-        }
-    #else
-        using Rng = std::minstd_rand;
-        [[ nodiscard ]] std::uint32_t getSystemSeed ( ) noexcept {
-            return std::random_device { } ( );
-        }
-    #endif
+#if M64
+#if defined ( __clang__ ) or defined ( __GNUC__ )
+using Rng = mcg128_fast;
+#else
+using Rng = splitmix64;
+#endif
+[[ nodiscard ]] std::uint64_t getSystemSeed ( ) noexcept {
+    return static_cast<std::uint64_t> ( std::random_device { } ( ) ) << 32 | static_cast<std::uint64_t> ( std::random_device { } ( ) );
+}
+#else
+using Rng = std::minstd_rand;
+[[ nodiscard ]] std::uint32_t getSystemSeed ( ) noexcept {
+    return std::random_device { } ( );
+}
+#endif
 
-} // namespace cgp::rng
+singleton<Rng> rng;
+
+auto lambda = [ ] { rng.instance ( ).seed ( getSystemSeed ( ) ); return EXIT_SUCCESS; } ( );
+
+} // namespace cgp
 
 
 #undef M64

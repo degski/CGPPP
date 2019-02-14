@@ -49,11 +49,10 @@ int main ( ) {
 
     cgp::Parameters<float> p { 2, 32, 1, 2 };
 
-    const cgp::Node<float> n1 ( p, 0 );
+    cgp::FunctionSet<float> fs;
 
-    cgp::Node<float> n2 = n1;
+    fs.addPresetNodeFunction ( "add" );
 
-    std::cout << n1.inputs [ 1 ] << ' ' << n2.inputs [ 1 ] << nl;
 
     return EXIT_SUCCESS;
 }

@@ -188,7 +188,7 @@ struct Parameters {
     }
 
     [[ nodiscard ]] bool mutate ( ) const noexcept {
-        return mutationDistribution ( Parameters::rng );
+        return mutationDistribution ( cgp::rng.instance ( ) );
     }
 
     [[ nodiscard ]] int getRandomFunction ( ) const noexcept {
@@ -196,16 +196,16 @@ struct Parameters {
     }
 
     [[ nodiscard ]] Real getRandomConnectionWeight ( ) const noexcept {
-        return std::uniform_real_distribution<Real> ( -connectionWeightRange, connectionWeightRange ) ( Parameters::rng );
+        return std::uniform_real_distribution<Real> ( -connectionWeightRange, connectionWeightRange ) ( cgp::rng.instance ( ) );
     }
 
     [[ nodiscard ]] int getRandomNodeInput ( const Chromosome<Real> & chromo_, const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( Parameters::rng ) ?
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( cgp::rng.instance ( ) ) ?
             Parameters::randInt ( chromo_.numNodes - nodePosition_ ) + nodePosition_ + chromo_.numInputs :
             Parameters::randInt ( chromo_.numInputs + nodePosition_ );
     }
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( Parameters::rng ) ?
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( cgp::rng.instance ( ) ) ?
             Parameters::randInt ( numNodes - nodePosition_ ) + nodePosition_ + numInputs :
             Parameters::randInt ( numInputs + nodePosition_ );
     }
@@ -222,14 +222,12 @@ struct Parameters {
     [[ nodiscard ]] static int randInt ( const int n_ ) noexcept {
         if ( not ( n_ ) )
             return 0;
-        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( Parameters::rng );
+        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( cgp::rng.instance ( ) );
     }
 
     void seedRng ( const std::uint64_t s_ ) noexcept {
-        rng.seed ( s_ );
+        rng.instance ( ).seed ( s_ );
     }
-
-    static rng::Rng rng;
 
     // Output.
 
@@ -258,9 +256,6 @@ struct Parameters {
         std::printf ( "-----------------------------------------------------------\n\n" );
     }
 };
-
-template<typename Real>
-rng::Rng Parameters<Real>::rng { rng::getSystemSeed ( ) };
 
 
 template<typename Real>
@@ -365,6 +360,13 @@ struct Chromosome {
         return not ( operator == ( rhs_ ) );
     }
 
+    template<typename ... Ts>
+    struct overloaded : Ts... {
+        using Ts::operator ( ) ...;
+    };
+    template<typename ... Ts>
+    overloaded ( Ts ... )->overloaded<Ts ...>;
+
     // Executes the given chromosome.
     void execute ( const std::vector<Real> & inputs_ ) noexcept {
         // For all of the active nodes.
@@ -379,7 +381,11 @@ struct Chromosome {
             // Get the functionality of the active node under evaluation.
             const int currentActiveNodeFunction = nodes [ currentActiveNode ].function;
             // calculate the output of the active node under evaluation.
-            nodes [ currentActiveNode ].output = params.funcSet.function [ currentActiveNodeFunction ] ( nodeInputsHold, nodes [ currentActiveNode ].weights );
+            mpark::visit ( overloaded {
+            [ this, currentActiveNode ] ( FunctionPointer<Real> func ) { nodes [ currentActiveNode ].output = func ( nodeInputsHold ); },
+            [ this, currentActiveNode ] ( FunctionPointerANN<Real> func ) { nodes [ currentActiveNode ].output = func ( nodeInputsHold, nodes [ currentActiveNode ].weights ); },
+                }, params.funcSet.function [ currentActiveNodeFunction ] );
+
             // Deal with Real's becoming NAN.
             if ( std::isnan ( nodes [ currentActiveNode ].output ) ) {
                 nodes [ currentActiveNode ].output = Real { 0 };
@@ -531,12 +537,6 @@ Real supervisedLearning ( const Parameters<Real> & params_, Chromosome<Real> & c
     return error;
 }
 
-
-// Returns the sum of the weighted inputs.
-template<typename Real>
-[[ nodiscard ]] Real sumWeigtedInputs ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept {
-    return std::inner_product ( std::begin ( inputs_ ), std::end ( inputs_ ), std::begin ( connectionWeights_ ), Real { 0 } );
-}
 
 } // namespace cgp
 
