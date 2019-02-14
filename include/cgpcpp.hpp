@@ -53,7 +53,7 @@
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
 
-#include "random.hpp"
+#include <singleton_rng.hpp> // https://github.com/degski/Sax/blob/master/singleton_rng.hpp
 #include "functions.hpp"
 #include "stl.hpp"
 
