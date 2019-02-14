@@ -75,11 +75,6 @@ singleton<Rng> rng;
 auto seedFromSystem = [ ] { const auto s = getSystemSeed ( ); rng.instance ( ).seed ( s ); return s; } ( );
 }
 
-Rng & rng ( ) noexcept {
-    return detail::rng.instance ( );
-}
-
-
-
+auto rng = [ ] ( ) -> Rng & { return detail::rng.instance ( ); } ( );
 
 } // namespace cgp

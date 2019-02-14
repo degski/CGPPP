@@ -326,7 +326,7 @@ template<typename Real> Real f_constPI ( const std::vector<Real> & inputs_ ) noe
 
 // Node function rand.  Returns a random number between minus one and positive one
 template<typename Real> Real f_randFloat ( const std::vector<Real> & inputs_ ) noexcept {
-    return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( rng ( ) );
+    return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( rng );
 }
 
 // Node function and. logical AND, returns '1' if all inputs_ are '1'
