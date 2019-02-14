@@ -30,17 +30,7 @@
 #include <random>
 
 
-#if UINTPTR_MAX == 0xFFFF'FFFF
-#define M32 1
-#define M64 0
-#elif UINTPTR_MAX == 0xFFFF'FFFF'FFFF'FFFF
-#define M32 0
-#define M64 1
-#else
-#error funny pointers detected
-#endif
-
-#if M64
+#if UINTPTR_MAX == 0xFFFF'FFFF'FFFF'FFFF
 #if defined ( __clang__ ) or defined ( __GNUC__ )
 #include <lehmer.hpp>       // https://github.com/degski/Sax/blob/master/lehmer.hpp
 #else
@@ -53,21 +43,29 @@
 
 namespace cgp {
 
-#if M64
+#if UINTPTR_MAX == 0xFFFF'FFFF'FFFF'FFFF
 #if defined ( __clang__ ) or defined ( __GNUC__ )
 using Rng = mcg128_fast;
-#else
-using Rng = splitmix64;
-#endif
-[[ nodiscard ]] std::uint64_t getSystemSeed ( ) noexcept {
-    std::cout << "init\n";
-    return static_cast<std::uint64_t> ( std::random_device { } ( ) ) << 32 | static_cast<std::uint64_t> ( std::random_device { } ( ) );
+[[ nodiscard ]] __uint128_t getSystemSeed ( ) noexcept {
+    std::random_device rd;
+    auto rnd = [ & rd ] ( const int shift ) { return static_cast<__uint128_t> ( rd ( ) ) << shift; };
+    return rnd ( 96 ) | rnd ( 64 ) | rnd ( 32 ) | rnd ( 0 );
 }
 #else
+using Rng = splitmix64;
+[[ nodiscard ]] std::uint64_t getSystemSeed ( ) noexcept {
+    std::random_device rd;
+    auto rnd = [ & rd ] ( const int shift ) { return static_cast<std::uint64_t> ( rd ( ) ) << shift; };
+    return rnd ( 32 ) | rnd ( 0 );
+}
+#endif
+#elif UINTPTR_MAX == 0xFFFF'FFFF
 using Rng = std::minstd_rand;
 [[ nodiscard ]] std::uint32_t getSystemSeed ( ) noexcept {
     return std::random_device { } ( );
 }
+#else
+#error funny pointers detected
 #endif
 
 singleton<Rng> rng;
@@ -75,6 +73,3 @@ singleton<Rng> rng;
 auto seedFromSystem = [ ] { const auto s = getSystemSeed ( ); rng.instance ( ).seed ( s ); return s; } ( );
 
 } // namespace cgp
-
-#undef M64
-#undef M32
