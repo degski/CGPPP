@@ -75,8 +75,8 @@ struct DataSet {
     int numSamples;
     int numInputs;
     int numOutputs;
-    std::vector<std::vector<Real>> inputData;
-    std::vector<std::vector<Real>> outputData;
+    stl::vector<stl::vector<Real>> inputData;
+    stl::vector<stl::vector<Real>> outputData;
 };
 
 
@@ -294,12 +294,11 @@ Parameters<Float> & initialize ( const int numInputs_, const int numNodes_, cons
 }
 
 
-
 template<typename Real>
 struct Node {
 
-    std::vector<int> inputs;
-    std::vector<Real> weights;
+    stl::vector<int> inputs;
+    stl::vector<Real> weights;
 
     int function;
     bool active;
@@ -339,11 +338,11 @@ struct Node {
 template<typename Real>
 struct Chromosome {
 
-    std::vector<Node<Real>> nodes;
-    std::vector<int> outputNodes;
-    std::vector<int> activeNodes;
-    std::vector<Real> outputValues;
-    std::vector<Real> nodeInputsHold;
+    stl::vector<Node<Real>> nodes;
+    stl::vector<int> outputNodes;
+    stl::vector<int> activeNodes;
+    stl::vector<Real> outputValues;
+    stl::vector<Real> nodeInputsHold;
     Real fitness;
     int generation;
 
@@ -377,7 +376,7 @@ struct Chromosome {
     }
 
     // Executes the given chromosome.
-    void execute ( const std::vector<Real> & inputs_ ) noexcept {
+    void execute ( const stl::vector<Real> & inputs_ ) noexcept {
         // For all of the active nodes.
         for ( const int currentActiveNode : activeNodes ) {
             const int nodeArity = nodes [ currentActiveNode ].actArity;
