@@ -542,12 +542,9 @@ template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet<Real> & data_ ) {
     Real error = Real { 0 };
     for ( const auto & sample : data_ ) {
-        // calculate the chromosome outputs for the set of inputs
         chromo_.execute ( sample.input );
-        // for each chromosome output
-        for ( int i = 0; i < params.numOutputs; ++i )
-            error += std::abs ( chromo_.outputValues [ i ] - sample.output [ i ] );
-    }
+        error = std::inner_product ( std::begin ( chromo_.outputValues ), std::end ( chromo_.outputValues ), std::begin ( sample.output ), error, std::plus<> ( ), [ ] ( const Real a, const Real b ) { return std::abs ( a - b ); } );
+     }
     return error;
 }
 
