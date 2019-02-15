@@ -86,6 +86,7 @@ template<typename Real> Real f_sine ( const stl::vector<Real> & inputs_ ) noexce
 template<typename Real> Real f_cosine ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_tangent ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_randFloat ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_randBern ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_constTwo ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_constOne ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_constZero ( const stl::vector<Real> & inputs_ ) noexcept;
@@ -180,7 +181,7 @@ struct FunctionSet {
 
     private:
 
-    static constexpr frozen::unordered_map<frozen::string, FunctionData, 34> function_set {
+    static constexpr frozen::unordered_map<frozen::string, FunctionData, 35> function_set {
         { "add", { function::f_add, -1 } },
         { "sub", { function::f_sub, 2 } },
         { "mul", { function::f_mul, -1 } },
@@ -198,6 +199,7 @@ struct FunctionSet {
         { "cos", { function::f_cosine, 1 } },
         { "tan", { function::f_tangent, 1 } },
         { "rand", { function::f_randFloat, 0 } },
+        { "bern", { function::f_randBern, 0 } },
         { "2", { function::f_constTwo, 0 } },
         { "1", { function::f_constOne, 0 } },
         { "0", { function::f_constZero, 0 } },
@@ -343,6 +345,11 @@ template<typename Real> Real f_constPI ( const stl::vector<Real> & inputs_ ) noe
 // Node function rand.  Returns a random number between minus one and positive one
 template<typename Real> Real f_randFloat ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( sax::prng );
+}
+
+// Node function bern.  Returns a random number either minus one or positive one
+template<typename Real> Real f_randBern ( const stl::vector<Real> & inputs_ ) noexcept {
+    return static_cast<Real> ( std::bernoulli_distribution ( ) ( sax::prng ) * 2 - 1 );
 }
 
 // Node function and. logical AND, returns '1' if all inputs_ are '1'

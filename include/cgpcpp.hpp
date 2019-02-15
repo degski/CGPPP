@@ -72,11 +72,11 @@ using NodeArray = absl::FixedArray<T>;
 
 template<typename Real = float>
 struct DataSet {
-    int numSamples;
-    int numInputs;
-    int numOutputs;
     stl::vector<stl::vector<Real>> inputData;
     stl::vector<stl::vector<Real>> outputData;
+    auto size ( ) const noexcept {
+        return inputData.size ( );
+    }
 };
 
 
@@ -165,7 +165,7 @@ struct Parameters {
         numNodes = numNodes_;
         numOutputs = numOutputs_;
         arity = arity_;
-        if ( not ( validateParameters ( ) ) ) {
+        if ( not ( hasValidatedParameters ( ) ) ) {
             std::cout << "\nError: Parameters not valid.\n\n";
             print ( );
             std::abort ( );
@@ -173,7 +173,7 @@ struct Parameters {
     }
 
     // Validate the current parameters.
-    [[ nodiscard ]] bool validateParameters ( ) const noexcept {
+    [[ nodiscard ]] bool hasValidatedParameters ( ) const noexcept {
         return
             mu > 0 and
             lambda > 1 and
@@ -230,7 +230,7 @@ struct Parameters {
 
     void run ( ) noexcept {
 
-        if ( validateParameters ( ) ) {
+        if ( hasValidatedParameters ( ) ) {
 
         }
 
@@ -298,7 +298,7 @@ template<typename Real>
 struct Node {
 
     stl::vector<int> inputs;
-    stl::vector<Real> weights;
+    // stl::vector<Real> weights;
 
     int function;
     bool active;
@@ -317,8 +317,8 @@ struct Node {
 
         inputs.reserve ( params.arity );
         std::generate_n ( stl::back_emplacer ( inputs ), params.arity, [ nodePosition_ ] { return params.getRandomNodeInput ( nodePosition_ ); } );
-        weights.reserve ( params.arity );
-        std::generate_n ( stl::back_emplacer ( weights ), params.arity, [ ] { return params.getRandomConnectionWeight ( ); } );
+        //weights.reserve ( params.arity );
+        //std::generate_n ( stl::back_emplacer ( weights ), params.arity, [ ] { return params.getRandomConnectionWeight ( ); } );
     }
 
     [[ maybe_unused ]] Node & operator = ( const Node & ) = default;
@@ -391,7 +391,7 @@ struct Chromosome {
             // calculate the output of the active node under evaluation.
             mpark::visit ( stl::overloaded {
             [ this, currentActiveNode ] ( FunctionPointer<Real> func ) { nodes [ currentActiveNode ].output = func ( nodeInputsHold ); },
-            [ this, currentActiveNode ] ( FunctionPointerANN<Real> func ) { nodes [ currentActiveNode ].output = func ( nodeInputsHold, nodes [ currentActiveNode ].weights ); },
+            [ this, currentActiveNode ] ( FunctionPointerANN<Real> func ) { nodes [ currentActiveNode ].output = func ( nodeInputsHold, nodeInputsHold/* , nodes [ currentActiveNode ].weights*/ ); },
                 }, funcSet.function [ currentActiveNodeFunction ] );
 
             // Deal with Real's becoming NAN.
@@ -509,10 +509,10 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
             if ( params.mutate ( ) )
                 input = params.getRandomNodeInput ( nodePosition );
         }
-        for ( auto & weight : node.weights ) {
-            if ( params.mutate ( ) )
-                weight = params.getRandomConnectionWeight ( );
-        }
+        //for ( auto & weight : node.weights ) {
+           // if ( params.mutate ( ) )
+           //     weight = params.getRandomConnectionWeight ( );
+        //}
         ++nodePosition;
     }
     for ( auto & output : chromo_.outputNodes ) {
@@ -527,13 +527,8 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 // and actual outputs for all outputs over all samples.
 template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet<Real> & data_ ) {
-    // error checking.
-    if ( params.numInputs != data_.numInputs )
-        throw std::runtime_error ( "Error: the number of chromosome inputs must match the number of inputs specified in the dataSet." );
-    if ( params.numOutputs != data_.numOutputs )
-        throw std::runtime_error ( "Error: the number of chromosome outputs must match the number of outputs specified in the dataSet." );
     Real error = Real { 0 };
-    for ( int i = 0; i < data_.numSamples; ++i ) {
+    for ( int i = 0, numSamples = data_.size ( ); i < numSamples; ++i ) {
         // calculate the chromosome outputs for the set of inputs
         chromo_.execute ( data_.inputData [ i ] );
         // for each chromosome output

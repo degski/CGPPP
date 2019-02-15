@@ -94,7 +94,8 @@ template<typename Container, typename T = typename Container::value_type>
 
 #if defined ( USE_PECTOR )
 template<typename T>
-using vector = pt::pector<T, pt::malloc_allocator<T, true, false>, int, pt::default_recommended_size, false>;
+// using vector = pt::pector<T, pt::malloc_allocator<T, true, false>, int, pt::default_recommended_size, false>;
+using vector = pt::pector<T, std::allocator<T>, int, pt::default_recommended_size, false>;
 #else
 template<typename T>
 using vector = std::vector<T>;

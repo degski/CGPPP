@@ -47,15 +47,16 @@
 
 int main ( ) {
 
-    auto params_ = cgp::initialize ( 2, 32, 1, 2 );
+    auto p = cgp::initialize ( 2, 32, 1, 2 );
 
-    cgp::params.setDimensions ( 2, 32, 1, 2 );
+    p.setDimensions ( 2, 32, 1, 2 );
 
     cgp::FunctionSet<Float> fs;
 
     fs.addPresetNodeFunction ( "add" );
 
     std::cout << sizeof ( cgp::Node<Float> ) << nl;
+    std::cout << sizeof ( cgp::Chromosome<Float> ) << nl;
 
     return EXIT_SUCCESS;
 }
