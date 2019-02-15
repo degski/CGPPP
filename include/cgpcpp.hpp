@@ -72,11 +72,24 @@ using NodeArray = absl::FixedArray<T>;
 
 template<typename Real = float>
 struct DataSet {
-    stl::vector<stl::vector<Real>> inputData;
-    stl::vector<stl::vector<Real>> outputData;
-    auto size ( ) const noexcept {
-        return inputData.size ( );
-    }
+
+    struct Data {
+        stl::vector<Real> input;
+        stl::vector<Real> output;
+    };
+
+    using iterator = typename stl::vector<Data>::iterator;
+    using const_iterator = typename stl::vector<Data>::const_iterator;
+
+    stl::vector<Data> data;
+
+    [[ nodiscard ]] iterator begin ( ) noexcept { return data.begin ( ); }
+    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return data.cbegin ( ); }
+    [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return data.cbegin ( ); }
+
+    [[ nodiscard ]] iterator end ( ) noexcept { return data.end ( ); }
+    [[ nodiscard ]] const_iterator end ( ) const noexcept { return data.cend ( ); }
+    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return data.cend ( ); }
 };
 
 
@@ -528,12 +541,12 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet<Real> & data_ ) {
     Real error = Real { 0 };
-    for ( int i = 0, numSamples = data_.size ( ); i < numSamples; ++i ) {
+    for ( const auto & sample : data_ ) {
         // calculate the chromosome outputs for the set of inputs
-        chromo_.execute ( data_.inputData [ i ] );
+        chromo_.execute ( sample.input );
         // for each chromosome output
-        for ( int j = 0; j < params.numOutputs; ++j )
-            error += std::abs ( chromo_.outputValues [ j ] - data_.outputData [ i ][ j ] );
+        for ( int i = 0; i < params.numOutputs; ++i )
+            error += std::abs ( chromo_.outputValues [ i ] - sample.output [ i ] );
     }
     return error;
 }
