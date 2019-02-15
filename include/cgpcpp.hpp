@@ -156,21 +156,26 @@ struct Parameters {
         numThreads { 1 } {
     }
 
-    void initialize ( const int numInputs_, const int numNodes_, const int numOutputs_, const int arity_ ) noexcept {
+    void setDimensions ( const int numInputs_, const int numNodes_, const int numOutputs_, const int arity_ ) noexcept {
         numInputs = numInputs_;
         numNodes = numNodes_;
         numOutputs = numOutputs_;
         arity = arity_;
+        if ( not ( validateParameters ( ) ) ) {
+            std::cout << "\nError: Parameters not valid.\n\n";
+            print ( );
+            std::abort ( );
+        }
     }
 
     // Validate the current parameters.
     [[ nodiscard ]] bool validateParameters ( ) const noexcept {
         return
-            not ( numInputs > 0 ) or
-            not ( numNodes >= 0 ) or
-            not ( numOutputs > 0 ) or
-            not ( arity > 0 ) or
-            not ( evolutionaryStrategy == '+' or evolutionaryStrategy == ',' );
+            ( numInputs > 0 ) and
+            ( numNodes >= 0 ) and
+            ( numOutputs > 0 ) and
+            ( arity > 0 ) and
+            ( evolutionaryStrategy == '+' or evolutionaryStrategy == ',' );
     }
 
     template<typename ... Args>
@@ -255,14 +260,14 @@ struct Parameters {
         std::printf ( "Outputs:\t\t\t\t%d\n", numOutputs );
         std::printf ( "Node Arity:\t\t\t\t%d\n", arity );
         std::printf ( "Connection weights range:\t\t+/- %f\n", connectionWeightRange );
-        std::printf ( "Mutation Type:\t\t\t\t%s\n", mutationTypeName );
+        std::printf ( "Mutation Type:\t\t\t\t%s\n", mutationTypeName.c_str ( ) );
         std::printf ( "Mutation rate:\t\t\t\t%f\n", mutationRate );
         std::printf ( "Recurrent Connection Probability:\t%f\n", recurrentConnectionProbability );
         std::printf ( "Shortcut Connections:\t\t\t%d\n", shortcutConnections );
-        std::printf ( "Fitness Function:\t\t\t%s\n", fitnessFunctionName );
+        std::printf ( "Fitness Function:\t\t\t%s\n", fitnessFunctionName.c_str ( ) );
         std::printf ( "Target Fitness:\t\t\t\t%f\n", targetFitness );
-        std::printf ( "Selection scheme:\t\t\t%s\n", selectionSchemeName );
-        std::printf ( "Reproduction scheme:\t\t\t%s\n", reproductionSchemeName );
+        std::printf ( "Selection scheme:\t\t\t%s\n", selectionSchemeName.c_str ( ) );
+        std::printf ( "Reproduction scheme:\t\t\t%s\n", reproductionSchemeName.c_str ( ) );
         std::printf ( "Update frequency:\t\t\t%d\n", updateFrequency );
         std::printf ( "Threads:\t\t\t%d\n", numThreads );
         funcSet.print ( );
@@ -277,7 +282,7 @@ auto params = [ ] { return parameters_singleton.instance ( ); } ( );
 
 
 Parameters<Float> & initialize ( const int numInputs_, const int numNodes_, const int numOutputs_, const int arity_ ) noexcept {
-    parameters_singleton_detail::params.initialize ( numInputs_, numNodes_, numOutputs_, arity_ );
+    parameters_singleton_detail::params.setDimensions ( numInputs_, numNodes_, numOutputs_, arity_ );
     return parameters_singleton_detail::params;
 }
 

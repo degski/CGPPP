@@ -47,7 +47,9 @@
 
 int main ( ) {
 
-    auto params = cgp::initialize ( 2, 32, 1, 2 );
+    auto params_ = cgp::initialize ( 2, 32, 1, 2 );
+
+    cgp::params.setDimensions ( 2, 32, 1, 2 );
 
     cgp::FunctionSet<Float> fs;
 
