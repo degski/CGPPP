@@ -53,7 +53,7 @@
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
 
-#include <singleton_rng.hpp> // https://github.com/degski/Sax/blob/master/singleton_rng.hpp
+#include <prng.hpp> // https://github.com/degski/Sax/blob/master/singleton_rng.hpp
 #include "functions.hpp"
 #include "stl.hpp"
 
@@ -188,7 +188,7 @@ struct Parameters {
     }
 
     [[ nodiscard ]] bool mutate ( ) const noexcept {
-        return mutationDistribution ( rnd::rng );
+        return mutationDistribution ( sax::prng );
     }
 
     [[ nodiscard ]] int getRandomFunction ( ) const noexcept {
@@ -196,16 +196,16 @@ struct Parameters {
     }
 
     [[ nodiscard ]] Real getRandomConnectionWeight ( ) const noexcept {
-        return std::uniform_real_distribution<Real> ( -connectionWeightRange, connectionWeightRange ) ( rnd::rng );
+        return std::uniform_real_distribution<Real> ( -connectionWeightRange, connectionWeightRange ) ( sax::prng );
     }
 
     [[ nodiscard ]] int getRandomNodeInput ( const Chromosome<Real> & chromo_, const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( rnd::rng ) ?
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( sax::prng ) ?
             Parameters::randInt ( chromo_.numNodes - nodePosition_ ) + nodePosition_ + chromo_.numInputs :
             Parameters::randInt ( chromo_.numInputs + nodePosition_ );
     }
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( rnd::rng ) ?
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( sax::prng ) ?
             Parameters::randInt ( numNodes - nodePosition_ ) + nodePosition_ + numInputs :
             Parameters::randInt ( numInputs + nodePosition_ );
     }
@@ -222,11 +222,11 @@ struct Parameters {
     [[ nodiscard ]] static int randInt ( const int n_ ) noexcept {
         if ( not ( n_ ) )
             return 0;
-        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( rnd::rng );
+        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( sax::prng );
     }
 
     void seedRng ( const std::uint64_t s_ = 0u ) noexcept {
-        rnd::rng.seed ( s_ ? s_ : rnd::os_seed ( ) );
+        sax::prng.seed ( s_ ? s_ : sax::os_seed ( ) );
     }
 
     // Output.
