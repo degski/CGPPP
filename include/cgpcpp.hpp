@@ -103,16 +103,20 @@ struct Parameters {
     int mu;
     int lambda;
     char evolutionaryStrategy;
+
     private:
+
     Real mutationRate;
-    public:
     std::bernoulli_distribution mutationDistribution;
+
+    public:
+
     Real recurrentConnectionProbability;
     Real connectionWeightRange;
 
     Real targetFitness;
     int updateFrequency;
-    int shortcutConnections;
+    bool shortcutConnections;
     void ( *mutationType )( Chromosome<Real> & chromo_ );
     std::string mutationTypeName;
     Real ( *fitnessFunction )( Chromosome<Real> & chromo_, const DataSet<Real> & data_ );
@@ -140,7 +144,7 @@ struct Parameters {
         connectionWeightRange { Real { 1 } },
         targetFitness { Real { 0 } },
         updateFrequency { 1 },
-        shortcutConnections { 1 },
+        shortcutConnections { true },
         mutationType { probabilisticMutation },
         mutationTypeName { "probabilisticMutation" },
         fitnessFunction { supervisedLearning },
@@ -171,11 +175,14 @@ struct Parameters {
     // Validate the current parameters.
     [[ nodiscard ]] bool validateParameters ( ) const noexcept {
         return
-            ( numInputs > 0 ) and
-            ( numNodes >= 0 ) and
-            ( numOutputs > 0 ) and
-            ( arity > 0 ) and
-            ( evolutionaryStrategy == '+' or evolutionaryStrategy == ',' );
+            mu > 0 and
+            lambda > 1 and
+            ( evolutionaryStrategy == '+' or evolutionaryStrategy == ',' ) and
+            mutationRate > Real { 0 } and
+            numInputs > 0 and
+            numNodes >= 0 and
+            numOutputs > 0 and
+            arity > 0;
     }
 
     template<typename ... Args>
