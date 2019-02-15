@@ -37,6 +37,14 @@
 
 namespace stl {
 
+template<typename ... Ts>
+struct overloaded : Ts... {
+    using Ts::operator ( ) ...;
+};
+template<typename ... Ts>
+overloaded ( Ts ... )->overloaded<Ts ...>;
+
+
 template<typename Container>
 class back_emplace_iterator : public std::iterator<std::output_iterator_tag, void, void, void, void> {
 

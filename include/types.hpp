@@ -21,39 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <cassert>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-
-#include <array>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-#include <iterator>
-#include <list>
-#include <map>
-#include <random>
-#include <string>
-#include <type_traits>
-#include <vector>
-
-#ifndef nl
-#define nl '\n'
-#endif
-
-#include "../include/cgpcpp.hpp"
+#pragma once
 
 
-int main ( ) {
-
-    auto params = cgp::initialize ( 2, 32, 1, 2 );
-
-    cgp::FunctionSet<Float> fs;
-
-    fs.addPresetNodeFunction ( "add" );
-
-    std::cout << sizeof ( cgp::Node<Float> ) << nl;
-
-    return EXIT_SUCCESS;
-}
+using Float = float;

@@ -92,9 +92,9 @@ template<typename Real = float>
 struct Chromosome;
 
 template<typename Real = float>
-void probabilisticMutation ( const Parameters<Real> & params_, Chromosome<Real> & chromo_ ) noexcept;
+void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept;
 template<typename Real>
-Real supervisedLearning ( const Parameters<Real> & params_, Chromosome<Real> & chromo_, const DataSet<Real> & data_ );
+Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet<Real> & data_ );
 
 
 template<typename Real>
@@ -109,25 +109,27 @@ struct Parameters {
     std::bernoulli_distribution mutationDistribution;
     Real recurrentConnectionProbability;
     Real connectionWeightRange;
+
+    Real targetFitness;
+    int updateFrequency;
+    int shortcutConnections;
+    void ( *mutationType )( Chromosome<Real> & chromo_ );
+    std::string mutationTypeName;
+    Real ( *fitnessFunction )( Chromosome<Real> & chromo_, const DataSet<Real> & data_ );
+    std::string fitnessFunctionName;
+    //void ( *selectionScheme )( Chromosome<Real> & *parents, Chromosome<Real> & *candidateChromos, int numParents, int numCandidateChromos );
+    std::string selectionSchemeName;
+    //void ( *reproductionScheme )( Chromosome<Real> & *parents, Chromosome<Real> & *children, int numParents, int numChildren );
+    std::string reproductionSchemeName;
+
     int numInputs;
     int numNodes;
     int numOutputs;
     int arity;
-    FunctionSet<Real> funcSet;
-    Real targetFitness;
-    int updateFrequency;
-    int shortcutConnections;
-    void ( *mutationType )( const Parameters & params_, Chromosome<Real> & chromo_ );
-    std::string mutationTypeName;
-    Real ( *fitnessFunction )( const Parameters & params_, Chromosome<Real> & chromo_, const DataSet<Real> & data_ );
-    std::string fitnessFunctionName;
-    //void ( *selectionScheme )( const Parameters & params_, Chromosome<Real> & *parents, Chromosome<Real> & *candidateChromos, int numParents, int numCandidateChromos );
-    std::string selectionSchemeName;
-    //void ( *reproductionScheme )( const Parameters & params_, Chromosome<Real> & *parents, Chromosome<Real> & *children, int numParents, int numChildren );
-    std::string reproductionSchemeName;
+
     int numThreads;
 
-    Parameters ( const int numInputs_, const int numNodes_, const int numOutputs_, const int arity_ ) noexcept :
+    Parameters ( ) noexcept :
 
         mu { 1 },
         lambda { 4 },
@@ -136,10 +138,6 @@ struct Parameters {
         mutationDistribution { mutationRate },
         recurrentConnectionProbability { Real { 0 } },
         connectionWeightRange { Real { 1 } },
-        numInputs { numInputs_ },
-        numNodes { numNodes_ },
-        numOutputs { numOutputs_ },
-        arity { arity_ },
         targetFitness { Real { 0 } },
         updateFrequency { 1 },
         shortcutConnections { 1 },
@@ -147,31 +145,38 @@ struct Parameters {
         mutationTypeName { "probabilisticMutation" },
         fitnessFunction { supervisedLearning },
         fitnessFunctionName { "supervisedLearning" },
- //       selectionScheme { selectFittest },
+ //     selectionScheme { selectFittest },
         selectionSchemeName { "selectFittest" },
-  //      reproductionScheme { mutateRandomParent },
+ //     reproductionScheme { mutateRandomParent },
         reproductionSchemeName { "mutateRandomParent" },
+        numInputs { 0 },
+        numNodes { 0 },
+        numOutputs { 0 },
+        arity { 0 },
         numThreads { 1 } {
+    }
 
-        assert ( numInputs > 0 );
-        assert ( numNodes >= 0 );
-        assert ( numOutputs > 0 );
-        assert ( arity > 0 );
+    void initialize ( const int numInputs_, const int numNodes_, const int numOutputs_, const int arity_ ) noexcept {
+        numInputs = numInputs_;
+        numNodes = numNodes_;
+        numOutputs = numOutputs_;
+        arity = arity_;
     }
 
     // Validate the current parameters.
     [[ nodiscard ]] bool validateParameters ( ) const noexcept {
-        assert ( numInputs > 0 );
-        assert ( numNodes >= 0 );
-        assert ( numOutputs > 0 );
-        assert ( arity > 0 );
-        assert ( evolutionaryStrategy == '+' or evolutionaryStrategy == ',' );
+        return
+            not ( numInputs > 0 ) or
+            not ( numNodes >= 0 ) or
+            not ( numOutputs > 0 ) or
+            not ( arity > 0 ) or
+            not ( evolutionaryStrategy == '+' or evolutionaryStrategy == ',' );
     }
 
     template<typename ... Args>
     void addNodeFunction ( Args && ... args_ ) {
         funcSet.addNodeFunction ( std::forward<Args> ( args_ ) ... );
-        assert ( funcSet.numFunctions ( ) > 0 );
+        assert ( funcSet.numFunctions > 0 );
     }
 
     template<typename ... Args>
@@ -199,23 +204,31 @@ struct Parameters {
         return std::uniform_real_distribution<Real> ( -connectionWeightRange, connectionWeightRange ) ( sax::prng );
     }
 
-    [[ nodiscard ]] int getRandomNodeInput ( const Chromosome<Real> & chromo_, const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( sax::prng ) ?
-            Parameters::randInt ( chromo_.numNodes - nodePosition_ ) + nodePosition_ + chromo_.numInputs :
-            Parameters::randInt ( chromo_.numInputs + nodePosition_ );
-    }
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
         return std::bernoulli_distribution ( recurrentConnectionProbability ) ( sax::prng ) ?
             Parameters::randInt ( numNodes - nodePosition_ ) + nodePosition_ + numInputs :
             Parameters::randInt ( numInputs + nodePosition_ );
     }
 
-    [[ nodiscard ]] int getRandomChromosomeOutput ( const Chromosome<Real> & chromo_ ) const noexcept {
-        return shortcutConnections ? Parameters::randInt ( chromo_.numInputs + chromo_.numNodes ) : Parameters::randInt ( chromo_.numNodes ) + chromo_.numInputs;
-    }
     [[ nodiscard ]] int getRandomChromosomeOutput ( ) const noexcept {
         return shortcutConnections ? Parameters::randInt ( numInputs + numNodes ) : Parameters::randInt ( numNodes ) + numInputs;
     }
+
+    // Run.
+
+    void run ( ) noexcept {
+
+        if ( validateParameters ( ) ) {
+
+        }
+
+        else {
+            std::cout << "\nError: Parameters not valid.\n\n";
+            print ( );
+            std::abort ( );
+        }
+    }
+
 
     // Random generator.
 
@@ -257,33 +270,44 @@ struct Parameters {
     }
 };
 
+inline namespace parameters_singleton_detail {
+singleton<Parameters<Float>> parameters_singleton;
+auto params = [ ] { return parameters_singleton.instance ( ); } ( );
+}
+
+
+Parameters<Float> & initialize ( const int numInputs_, const int numNodes_, const int numOutputs_, const int arity_ ) noexcept {
+    parameters_singleton_detail::params.initialize ( numInputs_, numNodes_, numOutputs_, arity_ );
+    return parameters_singleton_detail::params;
+}
+
+
 
 template<typename Real>
 struct Node {
 
     std::vector<int> inputs;
     std::vector<Real> weights;
+
     int function;
     bool active;
     Real output;
-    int maxArity;
     int actArity;
 
     Node ( ) = delete;
     Node ( const Node & ) = default;
     Node ( Node && ) noexcept = default;
-    Node ( const Parameters<Real> & params_, const int nodePosition_ ) :
+    Node ( const int nodePosition_ ) :
 
-        function { params_.getRandomFunction ( ) },
+        function { params.getRandomFunction ( ) },
         active { true },
         output { Real { 0 } },
-        maxArity { params_.arity },
-        actArity { params_.arity } {
+        actArity { params.arity } {
 
-        inputs.reserve ( maxArity );
-        std::generate_n ( stl::back_emplacer ( inputs ), maxArity, [ & params_, nodePosition_ ] ( ) { return params_.getRandomNodeInput ( nodePosition_ ); } );
-        weights.reserve ( maxArity );
-        std::generate_n ( stl::back_emplacer ( weights ), maxArity, [ & params_ ] ( ) { return params_.getRandomConnectionWeight ( ); } );
+        inputs.reserve ( params.arity );
+        std::generate_n ( stl::back_emplacer ( inputs ), params.arity, [ nodePosition_ ] { return params.getRandomNodeInput ( nodePosition_ ); } );
+        weights.reserve ( params.arity );
+        std::generate_n ( stl::back_emplacer ( weights ), params.arity, [ ] { return params.getRandomConnectionWeight ( ); } );
     }
 
     [[ maybe_unused ]] Node & operator = ( const Node & ) = default;
@@ -303,69 +327,42 @@ struct Node {
 template<typename Real>
 struct Chromosome {
 
-    int numInputs;
-    int numOutputs;
-    int numNodes;
-    int numActiveNodes;
-    int arity;
-    int generation;
     std::vector<Node<Real>> nodes;
     std::vector<int> outputNodes;
     std::vector<int> activeNodes;
     std::vector<Real> outputValues;
     std::vector<Real> nodeInputsHold;
-    const Parameters<Real> & params;
     Real fitness;
+    int generation;
 
-    Chromosome ( ) = delete;
-    Chromosome ( const Chromosome & ) = default;
-    Chromosome ( Chromosome && ) noexcept = default;
-    Chromosome ( const Parameters<Real> & params_ ) :
+    Chromosome ( ) :
 
-        numInputs { params_.numInputs },
-        numOutputs { params_.numOutputs },
-        numNodes { params_.numNodes },
-        numActiveNodes { numNodes },
-        arity { params_.arity },
-        generation { 0 },
-        activeNodes { numActiveNodes },
-        outputValues { numOutputs },
-        nodeInputsHold { arity },
-        params { params_ },
-        fitness { Real { -1 } } {
+        outputValues { params.numOutputs },
+        nodeInputsHold { params.arity },
+        fitness { Real { -1 } },
+        generation { 0 } {
 
-        nodes.reserve ( numNodes );
-        std::generate_n ( stl::back_emplacer ( nodes ), numNodes, [ & params_, this ] ( ) {
-            return Node<Real> { params_, nodes.size ( ) };
-        } );
-        outputNodes.reserve ( numOutputs );
-        std::generate_n ( stl::back_emplacer ( outputNodes ), numOutputs, [ & params_ ] ( ) { return params_.getRandomChromosomeOutput ( ); } );
+        nodes.reserve ( params.numNodes );
+        std::generate_n ( stl::back_emplacer ( nodes ), params.numNodes, [ this ] { return Node<Real> { nodes.size ( ) }; } );
 
+        outputNodes.reserve ( params.numOutputs );
+        std::generate_n ( stl::back_emplacer ( outputNodes ), params.numOutputs, [ ] { return params.getRandomChromosomeOutput ( ); } );
+
+        activeNodes.reserve ( params.numNodes );
         setChromosomeActiveNodes ( );
     }
+    Chromosome ( const Chromosome & ) = default;
+    Chromosome ( Chromosome && ) noexcept = default;
 
     [[ maybe_unused ]] Chromosome & operator = ( const Chromosome & ) = default;
     [[ maybe_unused ]] Chromosome & operator = ( Chromosome && ) noexcept = default;
 
     [[ nodiscard ]] bool operator == ( const Chromosome & rhs_ ) const noexcept {
-        return
-            numInputs == rhs_.numInputs and
-            numOutputs == rhs_.numOutputs and
-            numNodes == rhs_.numNodes and
-            arity == rhs_.arity and
-            nodes == rhs_.nodes and
-            outputNodes == rhs_.outputNodes;
+        return nodes == rhs_.nodes and outputNodes == rhs_.outputNodes;
     }
     [[ nodiscard ]] bool operator != ( const Chromosome & rhs_ ) const noexcept {
         return not ( operator == ( rhs_ ) );
     }
-
-    template<typename ... Ts>
-    struct overloaded : Ts... {
-        using Ts::operator ( ) ...;
-    };
-    template<typename ... Ts>
-    overloaded ( Ts ... )->overloaded<Ts ...>;
 
     // Executes the given chromosome.
     void execute ( const std::vector<Real> & inputs_ ) noexcept {
@@ -376,15 +373,15 @@ struct Chromosome {
             for ( int i = 0; i < nodeArity; ++i ) {
                 // Gather the nodes input locations.
                 const int nodeInputLocation = nodes [ currentActiveNode ].inputs [ i ];
-                nodeInputsHold [ i ] = nodeInputLocation < numInputs ? inputs_ [ nodeInputLocation ] : nodes [ nodeInputLocation - numInputs ].output;
+                nodeInputsHold [ i ] = nodeInputLocation < params.numInputs ? inputs_ [ nodeInputLocation ] : nodes [ nodeInputLocation - params.numInputs ].output;
             }
             // Get the functionality of the active node under evaluation.
             const int currentActiveNodeFunction = nodes [ currentActiveNode ].function;
             // calculate the output of the active node under evaluation.
-            mpark::visit ( overloaded {
+            mpark::visit ( stl::overloaded {
             [ this, currentActiveNode ] ( FunctionPointer<Real> func ) { nodes [ currentActiveNode ].output = func ( nodeInputsHold ); },
             [ this, currentActiveNode ] ( FunctionPointerANN<Real> func ) { nodes [ currentActiveNode ].output = func ( nodeInputsHold, nodes [ currentActiveNode ].weights ); },
-                }, params.funcSet.function [ currentActiveNodeFunction ] );
+                }, funcSet.function [ currentActiveNodeFunction ] );
 
             // Deal with Real's becoming NAN.
             if ( std::isnan ( nodes [ currentActiveNode ].output ) ) {
@@ -396,23 +393,22 @@ struct Chromosome {
             }
         }
         // Set the chromosome outputs.
-        for ( int i = 0; i < numOutputs; ++i ) {
-            outputValues [ i ] = outputNodes [ i ] < numInputs ? inputs_ [ outputNodes [ i ] ] : nodes [ outputNodes [ i ] - numInputs ].output;
+        for ( int i = 0; i < params.numOutputs; ++i ) {
+            outputValues [ i ] = outputNodes [ i ] < params.numInputs ? inputs_ [ outputNodes [ i ] ] : nodes [ outputNodes [ i ] - params.numInputs ].output;
         }
     }
 
     // Set the active nodes in the given chromosome.
     void setChromosomeActiveNodes ( ) noexcept {
-        // Set the number of active nodes to zero.
-        numActiveNodes = 0;
         // Reset the active nodes.
+        activeNodes.clear ( );
         for ( auto & node : nodes )
             node.active = false;
         // Start the recursive search for active nodes from
         // the output nodes for the number of output nodes.
         for ( auto & nodeIndex : outputNodes ) {
             // If the output connects to a chromosome input, skip.
-            if ( nodeIndex < numInputs )
+            if ( nodeIndex < params.numInputs )
                 continue;
             // Begin a recursive search for active nodes.
             recursivelySetActiveNodes ( nodeIndex );
@@ -423,14 +419,13 @@ struct Chromosome {
 
     // Used by setActiveNodes to recursively search for active nodes.
     void recursivelySetActiveNodes ( int nodeIndex_ ) noexcept {
-        nodeIndex_ -= numInputs;
+        nodeIndex_ -= params.numInputs;
         // If the given node is an input or has already been flagged as active, stop.
         if ( nodeIndex_ < 0 or nodes [ nodeIndex_ ].active )
             return;
         // Log the node as active.
+        activeNodes.push_back ( nodeIndex_ );
         nodes [ nodeIndex_ ].active = true;
-        activeNodes [ numActiveNodes ] = nodeIndex_;
-        ++numActiveNodes;
         // Set the nodes actual arity.
         nodes [ nodeIndex_ ].actArity = getChromosomeNodeArity ( nodes [ nodeIndex_ ] );
         // Recursively log all the nodes to which the current nodes connect as active.
@@ -440,28 +435,28 @@ struct Chromosome {
 
     // Gets the chromosome node arity.
     [[ nodiscard ]] int getChromosomeNodeArity ( const Node<Real> & node_ ) {
-        const int functionArity = params.funcSet.maxNumInputs [ node_.function ];
-        return functionArity == -1 or arity < functionArity ? arity : functionArity;
+        const int functionArity = funcSet.maxNumInputs [ node_.function ];
+        return functionArity == -1 or params.arity < functionArity ? params.arity : functionArity;
     }
 
     // Output.
 
-    void print ( const bool weights_ ) noexcept {
+    void print ( const bool print_weights_ ) noexcept {
         // Set the active nodes in the given chromosome.
         setChromosomeActiveNodes ( );
         // For all the chromo inputs.
         int i = 0;
-        for ( ; i < numInputs; ++i ) {
+        for ( ; i < params.numInputs; ++i ) {
             std::printf ( "(%d):\tinput\n", i );
         }
         // For all the hidden nodes.
         for ( auto & node : nodes ) {
             // Print the node function.
-            std::printf ( "(%d):\t%s\t", i, params.funcSet.functionNames [ node.function ] );
+            std::printf ( "(%d):\t%s\t", i, funcSet.functionNames [ node.function ] );
             // For the arity of the node.
             for ( int j = 0; j < getChromosomeNodeArity ( node ); ++j ) {
                 // Print the node input information.
-                if ( weights_ )
+                if ( print_weights_ )
                     std::printf ( "%d,%+.1f\t", node.inputs [ j ], node.weights [ j ] );
                 else
                     std::printf ( "%d ", node.inputs [ j ] );
@@ -493,25 +488,25 @@ struct Results {
 // chromosome gene is changed to a random valid allele with a
 // probability specified in parameters.
 template<typename Real>
-void probabilisticMutation ( const Parameters<Real> & params_, Chromosome<Real> & chromo_ ) noexcept {
+void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
     int nodePosition = 0;
     for ( auto & node : chromo_.nodes ) {
         // mutate the function gene
-        if ( params_.mutate ( ) )
-            node.function = params_.getRandomFunction ( );
+        if ( params.mutate ( ) )
+            node.function = params.getRandomFunction ( );
         for ( auto & input : node.inputs ) {
-            if ( params_.mutate ( ) )
-                input = params_.getRandomNodeInput ( chromo_, nodePosition );
+            if ( params.mutate ( ) )
+                input = params.getRandomNodeInput ( nodePosition );
         }
         for ( auto & weight : node.weights ) {
-            if ( params_.mutate ( ) )
-                weight = params_.getRandomConnectionWeight ( );
+            if ( params.mutate ( ) )
+                weight = params.getRandomConnectionWeight ( );
         }
         ++nodePosition;
     }
     for ( auto & output : chromo_.outputNodes ) {
-        if ( params_.mutate ( ) )
-            output = params_.getRandomChromosomeOutput ( chromo_ );
+        if ( params.mutate ( ) )
+            output = params.getRandomChromosomeOutput ( );
     }
 }
 
@@ -520,18 +515,18 @@ void probabilisticMutation ( const Parameters<Real> & params_, Chromosome<Real> 
 // an error of the sum of the absolute differences between the target
 // and actual outputs for all outputs over all samples.
 template<typename Real>
-Real supervisedLearning ( const Parameters<Real> & params_, Chromosome<Real> & chromo_, const DataSet<Real> & data_ ) {
+Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet<Real> & data_ ) {
     // error checking.
-    if ( chromo_.numInputs != data_.numInputs )
+    if ( params.numInputs != data_.numInputs )
         throw std::runtime_error ( "Error: the number of chromosome inputs must match the number of inputs specified in the dataSet." );
-    if ( chromo_.numOutputs != data_.numOutputs )
+    if ( params.numOutputs != data_.numOutputs )
         throw std::runtime_error ( "Error: the number of chromosome outputs must match the number of outputs specified in the dataSet." );
     Real error = Real { 0 };
     for ( int i = 0; i < data_.numSamples; ++i ) {
         // calculate the chromosome outputs for the set of inputs
         chromo_.execute ( data_.inputData [ i ] );
         // for each chromosome output
-        for ( int j = 0; j < chromo_.numOutputs; ++j )
+        for ( int j = 0; j < params.numOutputs; ++j )
             error += std::abs ( chromo_.outputValues [ j ] - data_.outputData [ i ][ j ] );
     }
     return error;

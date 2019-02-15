@@ -217,8 +217,8 @@
   <ItemGroup>
     <ClInclude Include="..\include\cgpcpp.hpp" />
     <ClInclude Include="..\include\functions.hpp" />
-    <ClInclude Include="..\include\random.hpp" />
     <ClInclude Include="..\include\stl.hpp" />
+    <ClInclude Include="..\include\types.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

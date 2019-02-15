@@ -51,7 +51,10 @@
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
 
-#include <prng.hpp> // https://github.com/degski/Sax/blob/master/prng.hpp
+#include <singleton.hpp>    // https://github.com/degski/Sax/blob/master/singleton.hpp
+#include <prng.hpp>         // https://github.com/degski/Sax/blob/master/prng.hpp
+
+#include "types.hpp"
 
 #ifndef nl
 #define DEF_NL
@@ -64,49 +67,49 @@ namespace cgp {
 namespace function {
 
 // Node function defines in CGP-Library.
-template<typename Real = float> Real f_add ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_sub ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_mul ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_divide ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_idiv ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_irem ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_negate ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_absolute ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_squareRoot ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_square ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_cube ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_power ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_exponential ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_sine ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_cosine ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_tangent ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_randFloat ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_constTwo ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_constOne ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_constZero ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_constPI ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_and ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_nand ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_or ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_nor ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_xor ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_xnor ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_not ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_wire ( const std::vector<Real> & inputs_ ) noexcept;
-template<typename Real = float> Real f_sigmoid ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept;
-template<typename Real = float> Real f_gaussian ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept;
-template<typename Real = float> Real f_step ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept;
-template<typename Real = float> Real f_softsign ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept;
-template<typename Real = float> Real f_hyperbolicTangent ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept;
+template<typename Real> Real f_add ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_sub ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_mul ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_divide ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_idiv ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_irem ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_negate ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_absolute ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_squareRoot ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_square ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_cube ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_power ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_exponential ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_sine ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_cosine ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_tangent ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_randFloat ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_constTwo ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_constOne ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_constZero ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_constPI ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_and ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_nand ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_or ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_nor ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_xor ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_xnor ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_not ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_wire ( const std::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_sigmoid ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept;
+template<typename Real> Real f_gaussian ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept;
+template<typename Real> Real f_step ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept;
+template<typename Real> Real f_softsign ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept;
+template<typename Real> Real f_hyperbolicTangent ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ ) noexcept;
 }
 
-template<typename Real = float>
+template<typename Real>
 using FunctionPointer = Real ( * ) ( const std::vector<Real> & inputs_ );
-template<typename Real = float>
+template<typename Real>
 using FunctionPointerANN = Real ( * ) ( const std::vector<Real> & inputs_, const std::vector<Real> & connectionWeights_ );
 
 
-template<typename Real = float>
+template<typename Real>
 struct FunctionSet {
 
     using Pointer = mpark::variant<FunctionPointer<Real>, FunctionPointerANN<Real>>;
@@ -177,9 +180,9 @@ struct FunctionSet {
 
     static constexpr frozen::unordered_map<frozen::string, FunctionData, 34> function_set {
         { "add", { function::f_add, -1 } },
-        { "sub", { function::f_sub, -1 } },
+        { "sub", { function::f_sub, 2 } },
         { "mul", { function::f_mul, -1 } },
-        { "div", { function::f_divide, -1 } },
+        { "div", { function::f_divide, 2 } },
         { "idiv", { function::f_idiv, 2 } },
         { "irem", { function::f_irem, 2 } },
         { "neg", { function::f_negate, 1 } },
@@ -213,6 +216,13 @@ struct FunctionSet {
     };
 };
 
+namespace detail {
+singleton<FunctionSet<Float>> functionSet;
+}
+
+
+auto funcSet = [ ] { return detail::functionSet.instance ( ); } ( );
+
 
 namespace function {
 
@@ -223,7 +233,8 @@ template<typename Real> Real f_add ( const std::vector<Real> & inputs_ ) noexcep
 
 // Node function sub. Returns the first input minus all remaining inputs_.
 template<typename Real> Real f_sub ( const std::vector<Real> & inputs_ ) noexcept {
-    return std::accumulate ( std::next ( std::begin ( inputs_ ) ), std::end ( inputs_ ), inputs_ [ 0 ], std::minus<Real> ( ) );
+    return inputs_ [ 0 ] - inputs_ [ 1 ];
+    // return std::accumulate ( std::next ( std::begin ( inputs_ ) ), std::end ( inputs_ ), inputs_ [ 0 ], std::minus<Real> ( ) );
 }
 
 // Node function mul. Returns the multiplication of all the inputs_.
@@ -233,7 +244,10 @@ template<typename Real> Real f_mul ( const std::vector<Real> & inputs_ ) noexcep
 
 // Node function div. Returns the first input divided by the second input divided by the third input etc
 template<typename Real> Real f_divide ( const std::vector<Real> & inputs_ ) noexcept {
-    return std::accumulate ( std::next ( std::begin ( inputs_ ) ), std::end ( inputs_ ), inputs_ [ 0 ], std::divides<Real> ( ) );
+    if ( inputs_ [ 1 ] )
+        return inputs_ [ 0 ] / inputs_ [ 1 ];
+    return Real { 0 };
+    // return std::accumulate ( std::next ( std::begin ( inputs_ ) ), std::end ( inputs_ ), inputs_ [ 0 ], std::divides<Real> ( ) );
 }
 
 // Node function idiv.Returns the first input (cast to int) divided by the second input (cast to int),
