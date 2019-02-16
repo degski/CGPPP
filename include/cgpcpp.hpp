@@ -53,7 +53,7 @@
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
 
-#include <prng.hpp> // https://github.com/degski/Sax/blob/master/prng.hpp
+#include <sax/prng.hpp> // https://github.com/degski/Sax/blob/master/prng.hpp
 #include "functions.hpp"
 #include "stl.hpp"
 
