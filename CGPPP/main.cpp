@@ -51,6 +51,7 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
+#include <cereal/archives/csv.hpp>
 #include <cereal/types/vector.hpp>
 
 
@@ -60,10 +61,10 @@ template<typename T>
 void saveToFile ( const T & t_, fs::path && path_, std::string && file_name_ ) {
     std::ofstream ostream ( path_ / ( file_name_ + std::string ( ".txt" ) ), std::ios::out );
     {
-        cereal::JSONOutputArchive archive ( ostream );
-        archive ( CEREAL_NVP ( t_ ) );
+        cereal::CSVOutputArchive archive ( ostream );
+        archive ( t_ );
     }
-    ostream.flush ( );
+    ostream << std::endl;
     ostream.close ( );
 }
 
@@ -71,8 +72,8 @@ template<typename T>
 void loadFromFile ( T & t_, fs::path && path_, std::string && file_name_ ) {
     std::ifstream istream ( path_ / ( file_name_ + std::string ( ".txt" ) ), std::ios::in );
     {
-        cereal::JSONInputArchive archive ( istream );
-        archive ( CEREAL_NVP ( t_ ) );
+        cereal::CSVInputArchive archive ( istream );
+        archive ( t_ );
     }
     istream.close ( );
 }
@@ -80,9 +81,29 @@ void loadFromFile ( T & t_, fs::path && path_, std::string && file_name_ ) {
 
 int main ( ) {
 
-    std::vector<int> output { 1, 2, 3 };
+    std::vector<int> output0 { 123, 456, 789 };
+    std::vector<float> output1 { 1.2f, -2.5f / 196415, 3.9f };
+    std::vector<std::string> output2 { "foo", "bar", "baz" };
 
-    saveToFile ( output, "z://", "test" );
+    saveToFile ( output0, "z://", "testi" );
+
+    std::vector<int> input0;
+    loadFromFile ( input0, "z://", "testi" );
+
+    for ( auto i : input0 ) {
+        std::cout << i << ' ';
+    }
+    std::cout << nl;
+
+    saveToFile ( output1, "z://", "testf" );
+
+    std::vector<float> input1;
+    loadFromFile ( input1, "z://", "testf" );
+
+    for ( auto i : input1 ) {
+        std::cout << i << ' ';
+    }
+    std::cout << nl;
 
     /*
 
