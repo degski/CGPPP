@@ -44,8 +44,47 @@
 
 #include "../include/cgpcpp.hpp"
 
+#include <SFML/System.hpp>
+
+#include <cereal/cereal.hpp>
+#include <cereal/types/pector.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/types/vector.hpp>
+
+
+namespace fs = std::filesystem;
+
+template<typename T>
+void saveToFile ( const T & t_, fs::path && path_, std::string && file_name_ ) {
+    std::ofstream ostream ( path_ / ( file_name_ + std::string ( ".txt" ) ), std::ios::out );
+    {
+        cereal::JSONOutputArchive archive ( ostream );
+        archive ( CEREAL_NVP ( t_ ) );
+    }
+    ostream.flush ( );
+    ostream.close ( );
+}
+
+template<typename T>
+void loadFromFile ( T & t_, fs::path && path_, std::string && file_name_ ) {
+    std::ifstream istream ( path_ / ( file_name_ + std::string ( ".txt" ) ), std::ios::in );
+    {
+        cereal::JSONInputArchive archive ( istream );
+        archive ( CEREAL_NVP ( t_ ) );
+    }
+    istream.close ( );
+}
+
 
 int main ( ) {
+
+    std::vector<int> output { 1, 2, 3 };
+
+    saveToFile ( output, "z://", "test" );
+
+    /*
 
     auto p = cgp::initialize ( 2, 32, 1, 2 );
 
@@ -57,6 +96,8 @@ int main ( ) {
 
     std::cout << sizeof ( cgp::Node<Float> ) << nl;
     std::cout << sizeof ( cgp::Chromosome<Float> ) << nl;
+
+    */
 
     return EXIT_SUCCESS;
 }

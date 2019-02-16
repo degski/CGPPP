@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <experimental/fixed_capacity_vector> // https://github.com/gnzlbg/static_vector
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <iterator>
@@ -76,6 +77,20 @@ struct DataSet {
     struct Data {
         stl::vector<Real> input;
         stl::vector<Real> output;
+
+        /*
+        private:
+
+        friend class cereal::access;
+
+        template<typename Archive>
+        void load ( Archive & ar_ ) {
+        }
+
+        template<typename Archive>
+        void save ( Archive & ar_ ) const {
+        }
+        */
     };
 
     using iterator = typename stl::vector<Data>::iterator;
@@ -90,6 +105,32 @@ struct DataSet {
     [[ nodiscard ]] iterator end ( ) noexcept { return data.end ( ); }
     [[ nodiscard ]] const_iterator end ( ) const noexcept { return data.cend ( ); }
     [[ nodiscard ]] const_iterator cend ( ) const noexcept { return data.cend ( ); }
+    /*
+
+    private:
+
+    friend class cereal::access;
+
+    template<typename Archive>
+    void load ( Archive & ar_ ) {
+        int in_arity, out_arity, num_record;
+        ar_ ( in_arity, out_arity, num_record );
+        for ( int i = 0; i < num_record; ++i ) {
+            Data record;
+            for ( j = 0; j < in_arity; ++j ) {
+                record.input.push_back (
+            }
+
+        }
+    }
+
+    template<typename Archive>
+    void save ( Archive & ar_ ) const {
+        int in_arity, out_arity, num_record;
+        ar_ ( value );
+    }
+
+    */
 };
 
 
