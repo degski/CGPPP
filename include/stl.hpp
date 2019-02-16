@@ -101,4 +101,21 @@ template<typename T>
 using vector = std::vector<T>;
 #endif
 
+
+template<typename KeyType, typename ValueType>
+struct pair {
+    using first_type = KeyType;
+    using second_type = ValueType;
+
+    pair ( ) = default;
+    template<typename T1, typename T2>
+    pair ( T1&& key, T2&& value )
+        : first ( std::forward<T1> ( key ) )
+        , second ( std::forward<T2> ( value ) ) { }
+
+    KeyType first;
+    ValueType second;
+};
+
+
 };

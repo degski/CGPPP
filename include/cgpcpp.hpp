@@ -125,7 +125,6 @@ struct Parameters {
     public:
 
     Real recurrentConnectionProbability;
-    Real connectionWeightRange;
 
     Real targetFitness;
     int updateFrequency;
@@ -154,7 +153,6 @@ struct Parameters {
         mutationRate { Real { 0.05 } },
         mutationDistribution { mutationRate },
         recurrentConnectionProbability { Real { 0 } },
-        connectionWeightRange { Real { 1 } },
         targetFitness { Real { 0 } },
         updateFrequency { 1 },
         shortcutConnections { true },
@@ -225,10 +223,6 @@ struct Parameters {
         return Parameters::randInt ( funcSet.numFunctions );
     }
 
-    [[ nodiscard ]] Real getRandomConnectionWeight ( ) const noexcept {
-        return std::uniform_real_distribution<Real> ( -connectionWeightRange, connectionWeightRange ) ( sax::prng );
-    }
-
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
         return std::bernoulli_distribution ( recurrentConnectionProbability ) ( sax::prng ) ?
             Parameters::randInt ( numNodes - nodePosition_ ) + nodePosition_ + numInputs :
@@ -279,7 +273,6 @@ struct Parameters {
         std::printf ( "Nodes:\t\t\t\t\t%d\n", numNodes );
         std::printf ( "Outputs:\t\t\t\t%d\n", numOutputs );
         std::printf ( "Node Arity:\t\t\t\t%d\n", arity );
-        std::printf ( "Connection weights range:\t\t+/- %f\n", connectionWeightRange );
         std::printf ( "Mutation Type:\t\t\t\t%s\n", mutationTypeName.c_str ( ) );
         std::printf ( "Mutation rate:\t\t\t\t%f\n", mutationRate );
         std::printf ( "Recurrent Connection Probability:\t%f\n", recurrentConnectionProbability );
@@ -311,7 +304,6 @@ template<typename Real>
 struct Node {
 
     stl::vector<int> inputs;
-    // stl::vector<Real> weights;
 
     int function;
     bool active;
@@ -330,8 +322,6 @@ struct Node {
 
         inputs.reserve ( params.arity );
         std::generate_n ( stl::back_emplacer ( inputs ), params.arity, [ nodePosition_ ] { return params.getRandomNodeInput ( nodePosition_ ); } );
-        //weights.reserve ( params.arity );
-        //std::generate_n ( stl::back_emplacer ( weights ), params.arity, [ ] { return params.getRandomConnectionWeight ( ); } );
     }
 
     [[ maybe_unused ]] Node & operator = ( const Node & ) = default;
@@ -340,7 +330,6 @@ struct Node {
     [[ nodiscard ]] bool operator == ( const Node & rhs_ ) const noexcept {
         function == rhs_.function;
         inputs == rhs_.inputs;
-        // weights == rhs_.weights; // for ANN
     }
     [[ nodiscard ]] bool operator != ( const Node & rhs_ ) const noexcept {
         return not ( operator == ( rhs_ ) );
@@ -356,6 +345,7 @@ struct Chromosome {
     stl::vector<int> activeNodes;
     stl::vector<Real> outputValues;
     stl::vector<Real> nodeInputsHold;
+
     Real fitness;
     int generation;
 
@@ -399,14 +389,9 @@ struct Chromosome {
                 const int nodeInputLocation = nodes [ currentActiveNode ].inputs [ i ];
                 nodeInputsHold [ i ] = nodeInputLocation < params.numInputs ? inputs_ [ nodeInputLocation ] : nodes [ nodeInputLocation - params.numInputs ].output;
             }
-            // Get the functionality of the active node under evaluation.
-            const int currentActiveNodeFunction = nodes [ currentActiveNode ].function;
+            // Get the functionality of the active node under evaluation and
             // calculate the output of the active node under evaluation.
-            mpark::visit ( stl::overloaded {
-            [ this, currentActiveNode ] ( FunctionPointer<Real> func ) { nodes [ currentActiveNode ].output = func ( nodeInputsHold ); },
-            [ this, currentActiveNode ] ( FunctionPointerANN<Real> func ) { nodes [ currentActiveNode ].output = func ( nodeInputsHold, nodeInputsHold/* , nodes [ currentActiveNode ].weights*/ ); },
-                }, funcSet.function [ currentActiveNodeFunction ] );
-
+            nodes [ currentActiveNode ].output = funcSet.function [ nodes [ currentActiveNode ].function ] ( nodeInputsHold );
             // Deal with Real's becoming NAN.
             if ( std::isnan ( nodes [ currentActiveNode ].output ) ) {
                 nodes [ currentActiveNode ].output = Real { 0 };
@@ -465,7 +450,7 @@ struct Chromosome {
 
     // Output.
 
-    void print ( const bool print_weights_ ) noexcept {
+    void print ( ) noexcept {
         // Set the active nodes in the given chromosome.
         setChromosomeActiveNodes ( );
         // For all the chromo inputs.
@@ -480,10 +465,7 @@ struct Chromosome {
             // For the arity of the node.
             for ( int j = 0; j < getChromosomeNodeArity ( node ); ++j ) {
                 // Print the node input information.
-                if ( print_weights_ )
-                    std::printf ( "%d,%+.1f\t", node.inputs [ j ], node.weights [ j ] );
-                else
-                    std::printf ( "%d ", node.inputs [ j ] );
+                std::printf ( "%d ", node.inputs [ j ] );
             }
             // Highlight active nodes.
             if ( node.active )
@@ -522,10 +504,6 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
             if ( params.mutate ( ) )
                 input = params.getRandomNodeInput ( nodePosition );
         }
-        //for ( auto & weight : node.weights ) {
-           // if ( params.mutate ( ) )
-           //     weight = params.getRandomConnectionWeight ( );
-        //}
         ++nodePosition;
     }
     for ( auto & output : chromo_.outputNodes ) {
@@ -1143,20 +1121,6 @@ DLL_EXPORT double getChromosomeNodeValue ( struct chromosome *chromo, int node )
     }
 
     return chromo->nodes [ node ]->output;
-}
-
-
-/*
-    returns whether the specified node is active in the given chromosome
-*/
-DLL_EXPORT int isNodeActive ( struct chromosome *chromo, int node ) {
-
-    if ( node < 0 or node > chromo->numNodes ) {
-        printf ( "Error: node less than or greater than the number of nodes  in chromosome. Called from isNodeActive.\n" );
-        exit ( 0 );
-    }
-
-    return chromo->nodes [ node ]->active;
 }
 
 
@@ -2214,30 +2178,6 @@ DLL_EXPORT struct chromosome* getChromosome ( struct results *rels, int run ) {
 
 
 
-
-
-/*
-    CGP Functions
-*/
-
-
-/*
-    Other Functions
-*/
-
-
-
-
-
-
-
-
-/*
-    Mutation Methods
-*/
-
-
-
 /*
     Conductions point mutation on the give chromosome. A predetermined
     number of chromosome genes are randomly selected and changed to
@@ -2298,76 +2238,6 @@ static void pointMutation ( struct parameters *params, struct chromosome *chromo
         }
     }
 }
-
-
-/*
-    Same as pointMutation but also mutates weight genes. The reason this is separated is
-    that point mutation should always mutate the same number of genes. When weight genes are not
-    used many mutations will not do anything and so the number of actual mutations varies.
-    - needs explaining better...
-*/
-static void pointMutationANN ( struct parameters *params, struct chromosome *chromo ) {
-
-    int i;
-    int numGenes;
-    int numFunctionGenes, numInputGenes, numWeightGenes, numOutputGenes;
-    int numGenesToMutate;
-    int geneToMutate;
-    int nodeIndex;
-    int nodeInputIndex;
-
-    /* get the number of each type of gene */
-    numFunctionGenes = params->numNodes;
-    numInputGenes = params->numNodes * params->arity;
-    numWeightGenes = params->numNodes * params->arity;
-    numOutputGenes = params->numOutputs;
-
-    /* set the total number of chromosome genes */
-    numGenes = numFunctionGenes + numInputGenes + numWeightGenes + numOutputGenes;
-
-    /* calculate the number of genes to mutate */
-    numGenesToMutate = ( int ) roundf ( numGenes * params->mutationRate );
-
-    /* for the number of genes to mutate */
-    for ( i = 0; i < numGenesToMutate; i++ ) {
-
-        /* select a random gene */
-        geneToMutate = randInt ( numGenes );
-
-        /* mutate function gene */
-        if ( geneToMutate < numFunctionGenes ) {
-
-            nodeIndex = geneToMutate;
-
-            chromo->nodes [ nodeIndex ]->function = getRandomFunction ( chromo->funcSet->numFunctions );
-        }
-
-        /* mutate node input gene */
-        else if ( geneToMutate < numFunctionGenes + numInputGenes ) {
-
-            nodeIndex = ( int ) ( ( geneToMutate - numFunctionGenes ) / chromo->arity );
-            nodeInputIndex = ( geneToMutate - numFunctionGenes ) % chromo->arity;
-
-            chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, nodeIndex, params->recurrentConnectionProbability );
-        }
-
-        /* mutate connection weight */
-        else if ( geneToMutate < numFunctionGenes + numInputGenes + numWeightGenes ) {
-
-            nodeIndex = ( int ) ( ( geneToMutate - numFunctionGenes - numInputGenes ) / chromo->arity );
-            nodeInputIndex = ( geneToMutate - numFunctionGenes - numInputGenes ) % chromo->arity;
-
-            chromo->nodes [ nodeIndex ]->weights [ nodeInputIndex ] = getRandomConnectionWeight ( params->connectionWeightRange );
-        }
-
-        /* mutate output gene */
-        else {
-            nodeIndex = geneToMutate - numFunctionGenes - numInputGenes - numWeightGenes;
-            chromo->outputNodes [ nodeIndex ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params->shortcutConnections );
-        }
-    }
-}
-
 
 
 /*

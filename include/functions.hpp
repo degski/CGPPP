@@ -39,7 +39,6 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
-#include <mpark/variant.hpp> // https://github.com/mpark/variant
 #include <vector>
 
 #include <absl/container/fixed_array.h>
@@ -99,11 +98,6 @@ template<typename Real> Real f_xor ( const stl::vector<Real> & inputs_ ) noexcep
 template<typename Real> Real f_xnor ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_not ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_wire ( const stl::vector<Real> & inputs_ ) noexcept;
-template<typename Real> Real f_sigmoid ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ ) noexcept;
-template<typename Real> Real f_gaussian ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ ) noexcept;
-template<typename Real> Real f_step ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ ) noexcept;
-template<typename Real> Real f_softsign ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ ) noexcept;
-template<typename Real> Real f_hyperbolicTangent ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ ) noexcept;
 }
 
 template<typename Real>
@@ -115,21 +109,13 @@ using FunctionPointerANN = Real ( * ) ( const stl::vector<Real> & inputs_, const
 template<typename Real>
 struct FunctionSet {
 
-    using Pointer = mpark::variant<FunctionPointer<Real>, FunctionPointerANN<Real>>;
+    using Pointer = FunctionPointer<Real>;
 
     private:
 
     struct FunctionData {
         Pointer function;
         int maxNumInputs;
-        constexpr FunctionData ( FunctionPointer<Real> fp_, int n_ ) noexcept :
-            function ( mpark::in_place_type<FunctionPointer<Real>>, fp_ ),
-            maxNumInputs ( n_ ) {
-        }
-        constexpr FunctionData ( FunctionPointerANN<Real> fp_, int n_ ) noexcept :
-            function ( mpark::in_place_type<FunctionPointerANN<Real>>, fp_ ),
-            maxNumInputs ( n_ ) {
-        }
     };
 
     public:
@@ -156,7 +142,7 @@ struct FunctionSet {
     template<typename PointerType>
     void addCustomNodeFunction ( const frozen::string & functionName_, PointerType function_, int maxNumInputs_ ) {
         functionNames.push_back ( functionName_ );
-        function.emplace_back ( mpark::in_place_type<PointerType>, function_ );
+        function.emplace_back ( function_ );
         maxNumInputs.push_back ( maxNumInputs_ );
         ++numFunctions;
     }
@@ -181,7 +167,7 @@ struct FunctionSet {
 
     private:
 
-    static constexpr frozen::unordered_map<frozen::string, FunctionData, 35> function_set {
+    static constexpr frozen::unordered_map<frozen::string, FunctionData, 30> function_set {
         { "add", { function::f_add, -1 } },
         { "sub", { function::f_sub, 2 } },
         { "mul", { function::f_mul, -1 } },
@@ -211,12 +197,7 @@ struct FunctionSet {
         { "xor", { function::f_xor, -1 } },
         { "xnor", { function::f_xnor, -1 } },
         { "not", { function::f_not, 1 } },
-        { "wire", { function::f_wire, 1 } },
-        { "sig", { function::f_sigmoid, -1 } },
-        { "gauss", { function::f_gaussian, -1 } },
-        { "step", { function::f_step, -1 } },
-        { "soft", { function::f_softsign, -1 } },
-        { "tanh", { function::f_hyperbolicTangent, -1 } }
+        { "wire", { function::f_wire, 1 } }
     };
 };
 
@@ -426,43 +407,6 @@ template<typename Real> Real f_not ( const stl::vector<Real> & inputs_ ) noexcep
 // Node function wire. simply acts as a wire returning the first input
 template<typename Real> Real f_wire ( const stl::vector<Real> & inputs_ ) noexcept {
     return inputs_ [ 0 ];
-}
-
-// Node function sigmoid. returns the sigmoid of the sum of weighted inputs_.
-//    The specific sigmoid function used in the logistic function.
-//    range: [0,1]
-template<typename Real> Real f_sigmoid ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ ) noexcept {
-    const Real sumWeigtedInputs = std::inner_product ( std::begin ( inputs_ ), std::end ( inputs_ ), std::begin ( connectionWeights_ ), Real { 0 } );
-    return Real { 1 } / ( Real { 1 } + std::exp ( -sumWeigtedInputs ) );
-}
-
-// Node function Gaussian. returns the Gaussian of the sum of weighted inputs_.
-//    range: [0,1]
-template<typename Real> Real f_gaussian ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ ) noexcept {
-    constexpr int centre = 0, width = 1;
-    const Real sumWeigtedInputs = std::inner_product ( std::begin ( inputs_ ), std::end ( inputs_ ), std::begin ( connectionWeights_ ), Real { 0 } );
-    return std::exp ( -( std::pow ( sumWeigtedInputs - centre, Real { 2 } ) ) / ( Real { 2 } * std::pow ( width, 2 ) ) );
-}
-
-// Node function step. returns the step function of the sum of weighted inputs_.
-//    range: [0,1]
-template<typename Real> Real f_step ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ ) noexcept {
-    const Real sumWeigtedInputs = std::inner_product ( std::begin ( inputs_ ), std::end ( inputs_ ), std::begin ( connectionWeights_ ), Real { 0 } );
-    return sumWeigtedInputs >= Real { 0 };
-}
-
-// Node function step. returns the step function of the sum of weighted inputs_.
-//    range: [-1,1]
-template<typename Real> Real f_softsign ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ ) noexcept {
-    const Real sumWeigtedInputs = std::inner_product ( std::begin ( inputs_ ), std::end ( inputs_ ), std::begin ( connectionWeights_ ), Real { 0 } );
-    return sumWeigtedInputs / ( Real { 1 } + std::abs ( sumWeigtedInputs ) );
-}
-
-// Node function tanh. returns the tanh function of the sum of weighted inputs_.
-//    range: [-1,1]
-template<typename Real> Real f_hyperbolicTangent ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ ) noexcept {
-    const Real sumWeigtedInputs = std::inner_product ( std::begin ( inputs_ ), std::end ( inputs_ ), std::begin ( connectionWeights_ ), Real { 0 } );
-    return std::tanh ( sumWeigtedInputs );
 }
 
 } // namespace function
