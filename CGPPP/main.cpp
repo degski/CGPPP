@@ -56,51 +56,6 @@ namespace fs = std::filesystem;
 #include <sax/string_split.hpp>
 
 
-[[ nodiscard ]] int stringToInt ( const std::string & s_ ) noexcept {
-    int i;
-    std::from_chars ( s_.data ( ), s_.data ( ) + s_.length ( ), i, 10 );
-    return i;
-}
-template<typename Real>
-[[ nodiscard ]] Real stringToReal ( const std::string & s_ ) noexcept {
-    Real r;
-    std::from_chars ( s_.data ( ), s_.data ( ) + s_.length ( ), r, std::chars_format::fixed );
-    return r;
-}
-
-template<typename Real>
-void loadDataFromFile ( cgp::DataSet<Real> & d_, fs::path && path_, std::string && file_name_ ) {
-    std::ifstream istream ( path_ / ( file_name_ + std::string ( ".data" ) ), std::ios::in );
-    {
-        std::string line;
-        std::getline ( istream, line );
-        const auto params = sax::string_split ( line, ",", " ", "\t" );
-        if ( 3 != std::size ( params ) ) {
-            std::cout << "Error: data parameters incorrect, read: " << line << nl;
-            std::abort ( );
-        }
-        const int in_arity = stringToInt ( params [ 0 ] ), out_arity = stringToInt ( params [ 1 ] ), io_arity = out_arity + in_arity, num_records = stringToInt ( params [ 2 ] );
-        d_.data.reserve ( num_records );
-        while ( std::getline ( istream, line ) ) {
-            auto back = d_.data.emplace_back ( );
-            back.input.reserve ( in_arity );
-            back.output.reserve ( out_arity );
-            const auto record = sax::string_split ( line, ",", " ", "\t" );
-            int i = 0;
-            for ( ; i < in_arity; ++i ) {
-                back.input.emplace_back ( stringToReal<Real> ( record [ i ] ) );
-            }
-            for ( ; i < io_arity; ++i ) {
-                back.output.emplace_back ( stringToReal<Real> ( record [ i ] ) );
-            }
-        }
-        if ( num_records != d_.data.size ( ) )
-            std::cout << "Warning: the actual number of records does not equal the parameters" << nl;
-    }
-
-    istream.close ( );
-}
-
 int main ( ) {
 
     auto p = cgp::initialize ( 2, 32, 1, 2 );
@@ -115,7 +70,8 @@ int main ( ) {
     std::cout << sizeof ( cgp::Chromosome<Float> ) << nl;
 
     cgp::DataSet<Float> ds;
-    loadDataFromFile ( ds, "Y:/REPOS/CGPPP/data/", "table" );
+
+    ds.loadFromFile ( "../data/", "table.data" );
 
     return EXIT_SUCCESS;
 }

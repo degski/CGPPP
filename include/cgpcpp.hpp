@@ -30,7 +30,9 @@
 #include <cstdlib>
 
 #include <algorithm>
+#include <charconv>
 #include <experimental/fixed_capacity_vector> // https://github.com/gnzlbg/static_vector
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <sax/iostream.hpp>
@@ -45,6 +47,8 @@
 #include <utility>
 #include <vector>
 
+namespace fs = std::filesystem;
+
 #include <absl/container/fixed_array.h>
 #include <absl/container/inlined_vector.h>
 
@@ -54,7 +58,11 @@
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
 
-#include <sax/prng.hpp> // https://github.com/degski/Sax/blob/master/prng.hpp
+// https://github.com/degski/Sax/
+
+#include <sax/prng.hpp>
+#include <sax/string_split.hpp>
+
 #include "functions.hpp"
 #include "stl.hpp"
 
@@ -85,32 +93,53 @@ struct DataSet {
     [[ nodiscard ]] iterator end ( ) noexcept { return data.end ( ); }
     [[ nodiscard ]] const_iterator end ( ) const noexcept { return data.cend ( ); }
     [[ nodiscard ]] const_iterator cend ( ) const noexcept { return data.cend ( ); }
-    /*
 
-    private:
+    [[ nodiscard ]] int stringToInt ( const std::string & s_ ) noexcept {
+        int i;
+        std::from_chars ( s_.data ( ), s_.data ( ) + s_.length ( ), i, 10 );
+        return i;
+    }
 
-    friend class cereal::access;
+    [[ nodiscard ]] Real stringToReal ( const std::string & s_ ) noexcept {
+        Real r;
+        std::from_chars ( s_.data ( ), s_.data ( ) + s_.length ( ), r, std::chars_format::fixed );
+        return r;
+    }
 
-    template<typename Archive>
-    void load ( Archive & ar_ ) {
-        int in_arity, out_arity, num_record;
-        ar_ ( in_arity, out_arity, num_record );
-        for ( int i = 0; i < num_record; ++i ) {
-            Data record;
-            for ( j = 0; j < in_arity; ++j ) {
-                record.input.push_back (
-            }
-
+    void loadFromFile ( fs::path && path_, std::string && file_name_ ) {
+        std::ifstream istream ( path_ / file_name_, std::ios::in );
+        if ( not ( istream.is_open ( ) ) ) {
+            std::cout << "Error: " << file_name_ << " cannot be found" << nl << "Terminating CGPPP-Library" << nl;
+            std::abort ( );
         }
+        {
+            std::string line;
+            std::getline ( istream, line );
+            const auto params = sax::string_split ( line, ",", " ", "\t" );
+            if ( 3 != std::size ( params ) ) {
+                std::cout << "Error: data parameters: \"" << line << "\" incorrect" << nl;
+                std::abort ( );
+            }
+            const int in_arity = stringToInt ( params [ 0 ] ), out_arity = stringToInt ( params [ 1 ] ), io_arity = out_arity + in_arity, num_records = stringToInt ( params [ 2 ] );
+            data.clear ( );
+            data.reserve ( num_records );
+            while ( std::getline ( istream, line ) ) {
+                auto back = data.emplace_back ( );
+                back.input.reserve ( in_arity ); back.output.reserve ( out_arity );
+                const auto record = sax::string_split ( line, ",", " ", "\t" );
+                int i = 0;
+                for ( ; i < in_arity; ++i ) {
+                    back.input.emplace_back ( stringToReal ( record [ i ] ) );
+                }
+                for ( ; i < io_arity; ++i ) {
+                    back.output.emplace_back ( stringToReal ( record [ i ] ) );
+                }
+            }
+            if ( num_records != data.size ( ) )
+                std::cout << "Warning: the actual number of records " << data.size ( ) << " differs from the parameters " << num_records << nl;
+        }
+        istream.close ( );
     }
-
-    template<typename Archive>
-    void save ( Archive & ar_ ) const {
-        int in_arity, out_arity, num_record;
-        ar_ ( value );
-    }
-
-    */
 };
 
 
@@ -1265,77 +1294,6 @@ DLL_EXPORT int compareChromosomesActiveNodes ( struct chromosome *chromoA, struc
 }
 
 
-DLL_EXPORT int compareChromosomesActiveNodesANN ( struct chromosome *chromoA, struct chromosome *chromoB ) {
-
-    int i, j;
-
-    /* ensure that the chromosomes don't point to NULL */
-    if ( chromoA == NULL or chromoB == NULL ) {
-        return 0;
-    }
-
-    /* Check the high level parameters */
-    if ( chromoA->numInputs != chromoB->numInputs ) {
-        return 0;
-    }
-
-    if ( chromoA->numNodes != chromoB->numNodes ) {
-        return 0;
-    }
-
-    if ( chromoA->numOutputs != chromoB->numOutputs ) {
-        return 0;
-    }
-
-    if ( chromoA->arity != chromoB->arity ) {
-        return 0;
-    }
-
-    /* for each node*/
-    for ( i = 0; i < chromoA->numNodes; i++ ) {
-
-        /* if the node is active in both chromosomes */
-        if ( chromoA->nodes [ i ]->active == 1 and chromoB->nodes [ i ]->active == 1 ) {
-
-            /* Check the function genes */
-            if ( chromoA->nodes [ i ]->function != chromoB->nodes [ i ]->function ) {
-                return 0;
-            }
-
-            /* for each node input */
-            for ( j = 0; j < chromoA->arity; j++ ) {
-
-                /* Check the node inputs */
-                if ( chromoA->nodes [ i ]->inputs [ j ] != chromoB->nodes [ i ]->inputs [ j ] ) {
-                    return 0;
-                }
-            }
-        }
-        /* if the node is active in one chromosome */
-        else if ( chromoA->nodes [ i ]->active != chromoB->nodes [ i ]->active ) {
-            return 0;
-        }
-
-        /* The node is inactive in both chromosomes */
-        else {
-            /* do nothing */
-        }
-    }
-
-    /* for all of the outputs */
-    for ( i = 0; i < chromoA->numOutputs; i++ ) {
-
-        /* Check the outputs */
-        if ( chromoA->outputNodes [ i ] != chromoB->outputNodes [ i ] ) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-
-
 
 /*
     Mutates the given chromosome using the mutation method described in parameters
@@ -1348,71 +1306,6 @@ DLL_EXPORT void mutateChromosome ( struct parameters *params, struct chromosome 
 }
 
 
-/*
-    removes the inactive nodes from the given chromosome
-*/
-DLL_EXPORT void removeInactiveNodes ( struct chromosome *chromo ) {
-
-    int i, j, k;
-
-    int originalNumNodes = chromo->numNodes;
-
-    /* set the active nodes */
-    setChromosomeActiveNodes ( chromo );
-
-    /* for all nodes */
-    for ( i = 0; i < chromo->numNodes - 1; i++ ) {
-
-        /* if the node is inactive */
-        if ( chromo->nodes [ i ]->active == 0 ) {
-
-            /* set the node to be the next node */
-            for ( j = i; j < chromo->numNodes - 1; j++ ) {
-                copyNode ( chromo->nodes [ j ], chromo->nodes [ j + 1 ] );
-            }
-
-            /* */
-            for ( j = 0; j < chromo->numNodes; j++ ) {
-                for ( k = 0; k < chromo->arity; k++ ) {
-
-                    if ( chromo->nodes [ j ]->inputs [ k ] >= i + chromo->numInputs ) {
-                        chromo->nodes [ j ]->inputs [ k ]--;
-                    }
-                }
-            }
-
-            /* for the number of chromosome outputs */
-            for ( j = 0; j < chromo->numOutputs; j++ ) {
-
-                if ( chromo->outputNodes [ j ] >= i + chromo->numInputs ) {
-                    chromo->outputNodes [ j ]--;
-                }
-            }
-
-            /* de-increment the number of nodes */
-            chromo->numNodes--;
-
-            /* made the newly assigned node be evaluated */
-            i--;
-        }
-    }
-
-    for ( i = chromo->numNodes; i < originalNumNodes; i++ ) {
-        freeNode ( chromo->nodes [ i ] );
-    }
-
-    if ( chromo->nodes [ chromo->numNodes - 1 ]->active == 0 ) {
-        freeNode ( chromo->nodes [ chromo->numNodes - 1 ] );
-        chromo->numNodes--;
-    }
-
-    /* reallocate the memory associated with the chromosome */
-    chromo->nodes = ( struct node** )realloc ( chromo->nodes, chromo->numNodes * sizeof ( struct node* ) );
-    chromo->activeNodes = ( int* ) realloc ( chromo->activeNodes, chromo->numNodes * sizeof ( int ) );
-
-    /* set the active nodes */
-    setChromosomeActiveNodes ( chromo );
-}
 
 
 /*
@@ -1442,62 +1335,6 @@ DLL_EXPORT void resetChromosome ( struct chromosome *chromo ) {
     for ( i = 0; i < chromo->numNodes; i++ ) {
         chromo->nodes [ i ]->output = 0;
     }
-}
-
-/*
-    copies the contents of one chromosome to another. Provided the number of inputs, nodes, outputs and node arity are the same.
-*/
-DLL_EXPORT void copyChromosome ( struct chromosome *chromoDest, struct chromosome *chromoSrc ) {
-
-    int i;
-
-    /* error checking  */
-    if ( chromoDest->numInputs != chromoSrc->numInputs ) {
-        printf ( "Error: cannot copy a chromosome to a chromosome of different dimensions. The number of chromosome inputs do not match.\n" );
-        printf ( "Terminating CGP-Library.\n" );
-        exit ( 0 );
-    }
-
-    if ( chromoDest->numNodes != chromoSrc->numNodes ) {
-        printf ( "Error: cannot copy a chromosome to a chromosome of different dimensions. The number of chromosome nodes do not match.\n" );
-        printf ( "Terminating CGP-Library.\n" );
-        exit ( 0 );
-    }
-
-    if ( chromoDest->numOutputs != chromoSrc->numOutputs ) {
-        printf ( "Error: cannot copy a chromosome to a chromosome of different dimensions. The number of chromosome outputs do not match.\n" );
-        printf ( "Terminating CGP-Library.\n" );
-        exit ( 0 );
-    }
-
-    if ( chromoDest->arity != chromoSrc->arity ) {
-        printf ( "Error: cannot copy a chromosome to a chromosome of different dimensions. The arity of the chromosome nodes do not match.\n" );
-        printf ( "Terminating CGP-Library.\n" );
-        exit ( 0 );
-    }
-
-    /* copy nodes and which are active */
-    for ( i = 0; i < chromoSrc->numNodes; i++ ) {
-        copyNode ( chromoDest->nodes [ i ], chromoSrc->nodes [ i ] );
-        chromoDest->activeNodes [ i ] = chromoSrc->activeNodes [ i ];
-    }
-
-    /* copy functionset */
-    copyFunctionSet ( chromoDest->funcSet, chromoSrc->funcSet );
-
-    /* copy each of the chromosomes outputs */
-    for ( i = 0; i < chromoSrc->numOutputs; i++ ) {
-        chromoDest->outputNodes [ i ] = chromoSrc->outputNodes [ i ];
-    }
-
-    /* copy the number of active node */
-    chromoDest->numActiveNodes = chromoSrc->numActiveNodes;
-
-    /* copy the fitness */
-    chromoDest->fitness = chromoSrc->fitness;
-
-    /* copy generation */
-    chromoDest->generation = chromoSrc->generation;
 }
 
 /*
@@ -1577,75 +1414,6 @@ DLL_EXPORT int getChromosomeGenerations ( struct chromosome *chromo ) {
 }
 
 
-/*
-    set the active nodes in the given chromosome
-*/
-static void setChromosomeActiveNodes ( struct chromosome *chromo ) {
-
-    int i;
-
-    /* error checking */
-    if ( chromo == NULL ) {
-        printf ( "Error: chromosome has not been initialised and so the active nodes cannot be set.\n" );
-        return;
-    }
-
-    /* set the number of active nodes to zero */
-    chromo->numActiveNodes = 0;
-
-    /* reset the active nodes */
-    for ( i = 0; i < chromo->numNodes; i++ ) {
-        chromo->nodes [ i ]->active = 0;
-    }
-
-    /* start the recursive search for active nodes from the output nodes for the number of output nodes */
-    for ( i = 0; i < chromo->numOutputs; i++ ) {
-
-        /* if the output connects to a chromosome input, skip */
-        if ( chromo->outputNodes [ i ] < chromo->numInputs ) {
-            continue;
-        }
-
-        /* begin a recursive search for active nodes */
-        recursivelySetActiveNodes ( chromo, chromo->outputNodes [ i ] );
-    }
-
-    /* place active nodes in order */
-    sortIntArray ( chromo->activeNodes, chromo->numActiveNodes );
-}
-
-
-/*
-    used by setActiveNodes to recursively search for active nodes
-*/
-static void recursivelySetActiveNodes ( struct chromosome *chromo, int nodeIndex ) {
-
-    int i;
-
-    /* if the given node is an input, stop */
-    if ( nodeIndex < chromo->numInputs ) {
-        return;
-    }
-
-    /* if the given node has already been flagged as active */
-    if ( chromo->nodes [ nodeIndex - chromo->numInputs ]->active == 1 ) {
-        return;
-    }
-
-    /* log the node as active */
-    chromo->nodes [ nodeIndex - chromo->numInputs ]->active = 1;
-    chromo->activeNodes [ chromo->numActiveNodes ] = nodeIndex - chromo->numInputs;
-    chromo->numActiveNodes++;
-
-    /* set the nodes actual arity*/
-    chromo->nodes [ nodeIndex - chromo->numInputs ]->actArity = getChromosomeNodeArity ( chromo, nodeIndex - chromo->numInputs );
-
-    /* recursively log all the nodes to which the current nodes connect as active */
-    for ( i = 0; i < chromo->nodes [ nodeIndex - chromo->numInputs ]->actArity; i++ ) {
-        recursivelySetActiveNodes ( chromo, chromo->nodes [ nodeIndex - chromo->numInputs ]->inputs [ i ] );
-    }
-}
-
 
 /*
     Sorts the given array of chromosomes by fitness, lowest to highest
@@ -1711,110 +1479,6 @@ DLL_EXPORT struct dataSet *initialiseDataSetFromArrays ( int numInputs, int numO
     }
 
     return data;
-}
-
-
-/*
-    Initialises data structure and assigns values of given file
-*/
-DLL_EXPORT struct dataSet *initialiseDataSetFromFile ( char const *file ) {
-
-    int i;
-    struct dataSet *data;
-    FILE *fp;
-    char *line, *record;
-    char buffer [ 1024 ];
-    int lineNum = -1;
-    int col;
-
-    /* attempt to open the given file */
-    fp = fopen ( file, "r" );
-
-    /* if the file cannot be found */
-    if ( fp == NULL ) {
-        printf ( "Error: file '%s' cannot be found.\nTerminating CGP-Library.\n", file );
-        exit ( 0 );
-    }
-
-    /* initialise memory for data structure */
-    data = ( struct dataSet* )std::malloc ( sizeof ( struct dataSet ) );
-
-    /* for every line in the given file */
-    while ( ( line = fgets ( buffer, sizeof ( buffer ), fp ) ) != NULL ) {
-
-        /* deal with the first line containing meta data */
-        if ( lineNum == -1 ) {
-
-            sscanf ( line, "%d,%d,%d", &( data->numInputs ), &( data->numOutputs ), &( data->numSamples ) );
-
-            data->inputData = ( double** ) std::malloc ( data->numSamples * sizeof ( double* ) );
-            data->outputData = ( double** ) std::malloc ( data->numSamples * sizeof ( double* ) );
-
-            for ( i = 0; i < data->numSamples; i++ ) {
-                data->inputData [ i ] = ( double* ) std::malloc ( data->numInputs * sizeof ( double ) );
-                data->outputData [ i ] = ( double* ) std::malloc ( data->numOutputs * sizeof ( double ) );
-            }
-        }
-        /* the other lines contain input output pairs */
-        else {
-
-            /* get the first value on the given line */
-            record = strtok ( line, " ,\n" );
-            col = 0;
-
-            /* until end of line */
-            while ( record != NULL ) {
-
-                /* if its an input value */
-                if ( col < data->numInputs ) {
-                    data->inputData [ lineNum ] [ col ] = atof ( record );
-                }
-
-                /* if its an output value */
-                else {
-
-                    data->outputData [ lineNum ] [ col - data->numInputs ] = atof ( record );
-                }
-
-                /* get the next value on the given line */
-                record = strtok ( NULL, " ,\n" );
-
-                /* increment the current col index */
-                col++;
-            }
-        }
-
-        /* increment the current line index */
-        lineNum++;
-    }
-
-    fclose ( fp );
-
-    return data;
-}
-
-
-/*
-    frees given dataSet
-*/
-DLL_EXPORT void freeDataSet ( struct dataSet *data ) {
-
-    int i;
-
-    /* attempt to prevent user double freeing */
-    if ( data == NULL ) {
-        printf ( "Warning: double freeing of dataSet prevented.\n" );
-        return;
-    }
-
-    for ( i = 0; i < data->numSamples; i++ ) {
-        free ( data->inputData [ i ] );
-        free ( data->outputData [ i ] );
-    }
-
-    free ( data->inputData );
-    free ( data->outputData );
-    free ( data );
 }
 
 

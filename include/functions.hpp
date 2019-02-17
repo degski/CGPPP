@@ -50,8 +50,10 @@
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
 
-#include <sax/singleton.hpp>    // https://github.com/degski/Sax/blob/master/singleton.hpp
-#include <sax/prng.hpp>         // https://github.com/degski/Sax/blob/master/prng.hpp
+// https://github.com/degski/Sax/
+
+#include <sax/singleton.hpp>
+#include <sax/prng.hpp>
 
 #include "types.hpp"
 #include "stl.hpp"
