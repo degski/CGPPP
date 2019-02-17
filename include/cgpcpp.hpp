@@ -74,17 +74,17 @@ using NodeArray = absl::FixedArray<T>;
 
 
 template<typename Real>
-struct DataSet {
+struct Data {
 
-    struct Data {
+    struct Record {
         stl::vector<Real> input;
         stl::vector<Real> output;
     };
 
-    using iterator = typename stl::vector<Data>::iterator;
-    using const_iterator = typename stl::vector<Data>::const_iterator;
+    using iterator = typename stl::vector<Record>::iterator;
+    using const_iterator = typename stl::vector<Record>::const_iterator;
 
-    stl::vector<Data> data;
+    stl::vector<Record> data;
 
     [[ nodiscard ]] iterator begin ( ) noexcept { return data.begin ( ); }
     [[ nodiscard ]] const_iterator begin ( ) const noexcept { return data.cbegin ( ); }
@@ -157,7 +157,7 @@ struct Chromosome;
 template<typename Real = float>
 void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept;
 template<typename Real>
-Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet<Real> & data_ );
+Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ );
 
 
 template<typename Real>
@@ -181,7 +181,7 @@ struct Parameters {
     bool shortcutConnections;
     void ( *mutationType )( Chromosome<Real> & chromo_ );
     std::string mutationTypeName;
-    Real ( *fitnessFunction )( Chromosome<Real> & chromo_, const DataSet<Real> & data_ );
+    Real ( *fitnessFunction )( Chromosome<Real> & chromo_, const Data<Real> & data_ );
     std::string fitnessFunctionName;
     //void ( *selectionScheme )( Chromosome<Real> & *parents, Chromosome<Real> & *candidateChromos, int numParents, int numCandidateChromos );
     std::string selectionSchemeName;
@@ -567,7 +567,7 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 // an error of the sum of the absolute differences between the target
 // and actual outputs for all outputs over all samples.
 template<typename Real>
-Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet<Real> & data_ ) {
+Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ ) {
     Real error = Real { 0 };
     for ( const auto & sample : data_ ) {
         chromo_.execute ( sample.input );

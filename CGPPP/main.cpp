@@ -69,7 +69,7 @@ int main ( ) {
     std::cout << sizeof ( cgp::Node<Float> ) << nl;
     std::cout << sizeof ( cgp::Chromosome<Float> ) << nl;
 
-    cgp::DataSet<Float> ds;
+    cgp::Data<Float> ds;
 
     ds.loadFromFile ( "../data/", "table.data" );
 
