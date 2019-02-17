@@ -117,7 +117,7 @@ struct Data {
             std::getline ( istream, line );
             const auto params = sax::string_split ( line, ",", " ", "\t" );
             if ( 3 != std::size ( params ) ) {
-                std::cout << "Error: data parameters: \"" << line << "\" incorrect" << nl;
+                std::cout << "Error: data parameters: \"" << line << "\" are invalid" << nl;
                 std::abort ( );
             }
             const int in_arity = stringToInt ( params [ 0 ] ), out_arity = stringToInt ( params [ 1 ] ), io_arity = out_arity + in_arity, num_records = stringToInt ( params [ 2 ] );
@@ -339,7 +339,7 @@ struct Parameters {
 };
 
 inline namespace parameters_singleton_detail {
-singleton<Parameters<Float>> parameters_singleton;
+sax::singleton<Parameters<Float>> parameters_singleton;
 auto params = [ ] { return parameters_singleton.instance ( ); } ( );
 }
 

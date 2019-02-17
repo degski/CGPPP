@@ -198,7 +198,7 @@ struct FunctionSet {
 };
 
 namespace detail {
-singleton<FunctionSet<Float>> functionSet;
+sax::singleton<FunctionSet<Float>> functionSet;
 }
 
 
