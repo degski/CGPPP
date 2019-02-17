@@ -1,0 +1,78 @@
+numInputs,2
+numNodes,24
+numOutputs,1
+arity,2
+functionSet,add,mul,abs,1,wire,rad,irem,neg
+func 5
+input 1, weights -0.495676
+input 1, weights 0.686087
+func 0
+input 1, weights 0.484333
+input 1, weights 0.105927
+func 2
+input 3, weights -0.518809
+input 1, weights -0.556304
+func 6
+input 2, weights 0.736848
+input 1, weights 0.413057
+func 4
+input 3, weights 0.214112
+input 3, weights 0.420440
+func 1
+input 3, weights 0.651620
+input 3, weights -0.282595
+func 6
+input 7, weights 0.705518
+input 2, weights 0.444707
+func 6
+input 3, weights -0.390115
+input 7, weights -0.926283
+func 0
+input 8, weights -0.293380
+input 8, weights -0.987578
+func 6
+input 10, weights -0.168990
+input 1, weights -0.344249
+func 1
+input 2, weights 0.109499
+input 9, weights 0.752019
+func 0
+input 11, weights -0.482314
+input 0, weights 0.831097
+func 0
+input 12, weights -0.041587
+input 11, weights -0.837813
+func 7
+input 9, weights 0.943813
+input 7, weights -0.563209
+func 0
+input 8, weights -0.637427
+input 10, weights 0.629397
+func 7
+input 2, weights -0.473973
+input 4, weights 0.882021
+func 0
+input 2, weights 0.781534
+input 8, weights 0.390192
+func 5
+input 7, weights -0.635111
+input 17, weights 0.093185
+func 1
+input 5, weights -0.958486
+input 10, weights 0.974164
+func 3
+input 13, weights 0.722974
+input 6, weights 0.528295
+func 7
+input 18, weights -0.826679
+input 1, weights -0.785046
+func 0
+input 12, weights 0.689506
+input 13, weights 0.662570
+func 0
+input 23, weights 0.772224
+input 22, weights 0.385709
+func 5
+input 21, weights -0.206023
+input 7, weights 0.297173
+output nodes 24,

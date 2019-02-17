@@ -33,7 +33,7 @@
 #include <experimental/fixed_capacity_vector> // https://github.com/gnzlbg/static_vector
 #include <fstream>
 #include <functional>
-#include <iostream>
+#include <sax/iostream.hpp>
 #include <iterator>
 #include <limits>
 #include <map>
@@ -59,38 +59,18 @@
 #include "stl.hpp"
 
 
-#ifndef nl
-#define DEF_NL
-#define nl '\n'
-#endif
-
-
 namespace cgp {
 
 template<typename T>
 using NodeArray = absl::FixedArray<T>;
 
 
-template<typename Real = float>
+template<typename Real>
 struct DataSet {
 
     struct Data {
         stl::vector<Real> input;
         stl::vector<Real> output;
-
-        /*
-        private:
-
-        friend class cereal::access;
-
-        template<typename Archive>
-        void load ( Archive & ar_ ) {
-        }
-
-        template<typename Archive>
-        void save ( Archive & ar_ ) const {
-        }
-        */
     };
 
     using iterator = typename stl::vector<Data>::iterator;
@@ -570,10 +550,6 @@ Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet<Real> & data
 
 } // namespace cgp
 
-#if defined ( DEF_NL )
-#undef nl
-#undef DEF_NL
-#endif
 
 #if  0
 /*

@@ -31,7 +31,7 @@
 
 #include <algorithm>
 #include <functional>
-#include <iostream>
+#include <sax/iostream.hpp>
 #include <iterator>
 #include <limits>
 #include <map>
@@ -55,12 +55,6 @@
 
 #include "types.hpp"
 #include "stl.hpp"
-
-
-#ifndef nl
-#define DEF_NL
-#define nl '\n'
-#endif
 
 
 namespace cgp {
@@ -411,9 +405,3 @@ template<typename Real> Real f_wire ( const stl::vector<Real> & inputs_ ) noexce
 
 } // namespace function
 } // namespace cgp
-
-
-#if defined ( DEF_NL )
-#undef nl
-#undef DEF_NL
-#endif
