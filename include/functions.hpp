@@ -129,9 +129,8 @@ struct FunctionSet {
     template<typename Archive>
     void save ( Archive & archive_ ) const {
         archive_ ( numFunctions );
-        for ( const auto & name : functionNames ) {
+        for ( const auto & name : functionNames )
             archive_ ( std::string { name.data ( ), name.size ( ) } );
-        }
     }
 
     template<typename Archive>
@@ -185,7 +184,7 @@ struct FunctionSet {
         return function_set.size ( );
     }
 
-    private:
+    // private:
 
     static constexpr frozen::unordered_map<frozen::string, FunctionData, 30> function_set {
         { "add", { function::f_add, -1 } },

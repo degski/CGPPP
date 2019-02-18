@@ -58,6 +58,7 @@ namespace fs = std::filesystem;
 #include <sax/string_split.hpp>
 
 
+#include <experimental/fixed_capacity_vector> // https://github.com/gnzlbg/static_vector
 
 int main ( ) {
 
@@ -68,13 +69,16 @@ int main ( ) {
     cgp::FunctionSet<Float> fs;
 
     fs.addPresetNodeFunction ( "add" );
+    fs.addPresetNodeFunction ( "sub" );
+    fs.addPresetNodeFunction ( "mul" );
 
-    std::cout << sizeof ( cgp::Node<Float> ) << nl;
-    std::cout << sizeof ( cgp::Chromosome<Float> ) << nl;
+    // std::cout << sizeof ( cgp::Node<Float> ) << nl;
+    // std::cout << sizeof ( cgp::Chromosome<Float> ) << nl;
 
     cgp::Data<Float> ds;
 
     ds.loadFromFile ( "../data/", "table.data" );
+
 
     return EXIT_SUCCESS;
 }
