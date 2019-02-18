@@ -45,7 +45,7 @@
 #include <absl/container/inlined_vector.h>
 
 #include <cereal/cereal.hpp>
-#include <cereal/archives/binary.hpp>
+#include <cereal/access.hpp>
 
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
@@ -58,7 +58,7 @@
 #include <sax/stl.hpp>
 
 #include "types.hpp"
-#include "stl.hpp"
+#include "vector.hpp"
 
 
 namespace cgp {

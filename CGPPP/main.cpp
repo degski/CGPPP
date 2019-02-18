@@ -49,8 +49,6 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/csv.hpp>
 #include <cereal/types/vector.hpp>
-
-
 #include <cereal/types/string.hpp>
 
 namespace fs = std::filesystem;

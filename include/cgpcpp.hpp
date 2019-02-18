@@ -53,6 +53,7 @@ namespace fs = std::filesystem;
 #include <absl/container/inlined_vector.h>
 
 #include <cereal/cereal.hpp>
+#include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 
 #include <frozen/unordered_map.h>
@@ -65,7 +66,7 @@ namespace fs = std::filesystem;
 #include <sax/string_split.hpp>
 
 #include "functions.hpp"
-#include "stl.hpp"
+#include "vector.hpp"
 
 
 namespace cgp {
@@ -413,7 +414,25 @@ struct Chromosome {
     void serialize ( Archive & archive_ ) {
         archive_ ( params.numInputs, params.numNodes, params.numOutputs, params.arity );
         archive_ ( funcSet );
-        archive_ ( nodes, outputNodes );
+        archive_ ( nodes, outputNodes, activeNodes );
+    }
+
+    void saveToFile ( fs::path && path_, std::string && file_name_ ) {
+        std::ofstream ostream ( std::move ( path_ ) / ( std::move ( file_name_ ) + std::string ( ".chromo" ) ), std::ios::binary );
+        {
+            cereal::BinaryOutputArchive archive ( ostream );
+            archive ( * this );
+        }
+        ostream.close ( );
+    }
+
+    void loadFromFile ( fs::path && path_, std::string && file_name_ ) {
+        std::ifstream istream ( std::move ( path_ ) / ( std::move ( file_name_ ) + std::string ( ".chromo" ) ), std::ios::binary );
+        {
+            cereal::BinaryInputArchive archive ( istream );
+            archive ( * this );
+        }
+        istream.close ( );
     }
 
     Chromosome ( ) :
