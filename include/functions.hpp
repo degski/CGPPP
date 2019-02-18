@@ -152,9 +152,8 @@ struct FunctionSet {
         ( addPresetNodeFunction ( args_ ), ... );
     }
 
-    void addPresetNodeFunction ( const frozen::string & functionName_ ) {
-        auto [ f, n ] { function_set.at ( functionName_ ) };
-        functionNames.push_back ( functionName_ );
+    void addPresetNodeFunction ( frozen::string && functionName_ ) {
+        auto [ f, n ] { function_set.at ( functionNames.emplace_back ( std::move ( functionName_ ) ) ) };
         function.push_back ( f );
         maxNumInputs.push_back ( n );
         ++numFunctions;
