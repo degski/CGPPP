@@ -23,15 +23,6 @@
 
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-
-#include <algorithm>
-#include <iterator>
-#include <type_traits>
-#include <utility>
-
 #if defined ( USE_PECTOR )
 #include <pector/pector.h> // Use my fork at https://github.com/degski/pector, or hell will come upon you.
 #include <pector/malloc_allocator.h>
@@ -41,15 +32,11 @@
 #include <cereal/types/vector.hpp>
 #endif
 
-#include <sax/stl.hpp>
-
-
 namespace stl {
 
 #if defined ( USE_PECTOR )
 template<typename T>
 using vector = pt::pector<T, pt::malloc_allocator<T, true, false>, int, pt::default_recommended_size, false>;
-// using vector = pt::pector<T, std::allocator<T>, int, pt::default_recommended_size, false>;
 #else
 template<typename T>
 using vector = std::vector<T>;

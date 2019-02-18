@@ -51,9 +51,12 @@
 #include <cereal/types/vector.hpp>
 
 
+#include <cereal/types/string.hpp>
+
 namespace fs = std::filesystem;
 
 #include <sax/string_split.hpp>
+
 
 
 int main ( ) {

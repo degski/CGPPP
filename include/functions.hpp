@@ -52,8 +52,10 @@
 
 // https://github.com/degski/Sax/
 
-#include <sax/singleton.hpp>
+
 #include <sax/prng.hpp>
+#include <sax/singleton.hpp>
+#include <sax/stl.hpp>
 
 #include "types.hpp"
 #include "stl.hpp"
@@ -121,6 +123,29 @@ struct FunctionSet {
     stl::vector<int> maxNumInputs;
 
     int numFunctions = 0;
+
+    friend class cereal::access;
+
+    template<typename Archive>
+    void save ( Archive & archive_ ) const {
+        archive_ ( numFunctions );
+        for ( const auto & name : functionNames ) {
+            archive_ ( std::string { name.data ( ), name.size ( ) } );
+        }
+    }
+
+    template<typename Archive>
+    void load ( Archive & archive_ ) {
+        archive_ ( numFunctions );
+        std::string name;
+        for ( int i = 0; i < numFunctions; ++i ) {
+            name.clear ( );
+            archive_ ( name );
+            auto [ f, n ] { function_set.at ( functionNames.emplace_back ( name.data ( ), name.size ( ) ) ) };
+            function.push_back ( f );
+            maxNumInputs.push_back ( n );
+        }
+    }
 
     template<typename ... Args>
     void addNodeFunction ( Args && ... args_ ) {

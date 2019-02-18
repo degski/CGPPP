@@ -61,6 +61,7 @@ namespace fs = std::filesystem;
 // https://github.com/degski/Sax/
 
 #include <sax/prng.hpp>
+#include <sax/stl.hpp>
 #include <sax/string_split.hpp>
 
 #include "functions.hpp"
@@ -384,6 +385,13 @@ struct Node {
     [[ nodiscard ]] bool operator != ( const Node & rhs_ ) const noexcept {
         return not ( operator == ( rhs_ ) );
     }
+
+    friend class cereal::access;
+
+    template<typename Archive>
+    void serialize ( Archive & archive_ ) {
+        archive_ ( inputs, function, active, output, actArity );
+    }
 };
 
 
@@ -398,6 +406,15 @@ struct Chromosome {
 
     Real fitness;
     int generation;
+
+    friend class cereal::access;
+
+    template<typename Archive>
+    void serialize ( Archive & archive_ ) {
+        archive_ ( params.numInputs, params.numNodes, params.numOutputs, params.arity );
+        archive_ ( funcSet );
+        archive_ ( nodes, outputNodes );
+    }
 
     Chromosome ( ) :
 
@@ -911,11 +928,6 @@ DLL_EXPORT void setMutationType ( struct parameters *params, char const *mutatio
         strncpy ( params->mutationTypeName, "point", MUTATIONTYPENAMELENGTH );
     }
 
-    else if ( strncmp ( mutationType, "pointANN", MUTATIONTYPENAMELENGTH ) == 0 ) {
-
-        params->mutationType = pointMutationANN;
-        strncpy ( params->mutationTypeName, "pointANN", MUTATIONTYPENAMELENGTH );
-    }
 
     else if ( strncmp ( mutationType, "onlyActive", MUTATIONTYPENAMELENGTH ) == 0 ) {
 
