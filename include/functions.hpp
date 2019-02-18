@@ -58,7 +58,6 @@
 #include <sax/stl.hpp>
 
 #include "types.hpp"
-#include "vector.hpp"
 
 
 namespace cgp {

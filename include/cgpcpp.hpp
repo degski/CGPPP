@@ -66,7 +66,6 @@ namespace fs = std::filesystem;
 #include <sax/string_split.hpp>
 
 #include "functions.hpp"
-#include "vector.hpp"
 
 
 namespace cgp {
