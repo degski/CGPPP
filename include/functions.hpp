@@ -78,7 +78,9 @@ template<typename Real> Real f_square ( const stl::vector<Real> & inputs_ ) noex
 template<typename Real> Real f_cube ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_power ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_exponential ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_exponential2 ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_logarithm ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_logarithm2 ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_sin ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_cos ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_tan ( const stl::vector<Real> & inputs_ ) noexcept;
@@ -199,7 +201,7 @@ struct FunctionSet {
 
     // private:
 
-    static constexpr frozen::unordered_map<frozen::string, FunctionData, 44> function_set {
+    static constexpr frozen::unordered_map<frozen::string, FunctionData, 46> function_set {
         { "add", { function::f_add, -1 } },
         { "sub", { function::f_sub, 2 } },
         { "mul", { function::f_mul, -1 } },
@@ -213,7 +215,9 @@ struct FunctionSet {
         { "cube", { function::f_cube, 1 } },
         { "pow", { function::f_power, 2 } },
         { "exp", { function::f_exponential, 1 } },
+        { "exp2", { function::f_exponential2, 1 } },
         { "log", { function::f_logarithm, 1 } },
+        { "log2", { function::f_logarithm2, 1 } },
         { "sin", { function::f_sin, 1 } },
         { "cos", { function::f_cos, 1 } },
         { "tan", { function::f_tan, 1 } },
@@ -334,9 +338,19 @@ template<typename Real> Real f_exponential ( const stl::vector<Real> & inputs_ )
     return std::exp ( inputs_ [ 0 ] );
 }
 
+// Node function exp2.  Returns the 2 ^ x of the first input
+template<typename Real> Real f_exponential2 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return std::exp2 ( inputs_ [ 0 ] );
+}
+
 // Node function log.  Returns the natural logarith of the first input
 template<typename Real> Real f_logarithm ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::log ( inputs_ [ 0 ] );
+}
+
+// Node function log.  Returns the  log base 2 of the first input
+template<typename Real> Real f_logarithm2 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return std::log2 ( inputs_ [ 0 ] );
 }
 
 // Node function sin.  Returns the sine of the first input
