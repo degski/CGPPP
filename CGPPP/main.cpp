@@ -70,7 +70,7 @@ int main ( ) {
     fs.addPresetNodeFunction ( "sub" );
     fs.addPresetNodeFunction ( "mul" );
 
-    fs.printAll ( );
+    fs.printBuiltinFunctionSet ( );
 
     cgp::Data<Float> ds;
 

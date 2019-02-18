@@ -108,7 +108,7 @@ struct Data {
     }
 
     void loadFromFile ( fs::path && path_, std::string && file_name_ ) {
-        std::ifstream istream ( path_ / file_name_, std::ios::in );
+        std::ifstream istream ( std::move ( path_ ) / std::move ( file_name_ ), std::ios::in );
         if ( not ( istream.is_open ( ) ) ) {
             std::cout << "Error: " << file_name_ << " cannot be found" << nl << "Terminating CGPPP-Library" << nl;
             std::abort ( );
@@ -249,13 +249,13 @@ struct Parameters {
 
     template<typename ... Args>
     void addNodeFunction ( Args && ... args_ ) {
-        funcSet.addNodeFunction ( std::forward<Args> ( args_ ) ... );
-        assert ( funcSet.numFunctions > 0 );
+        functionSet.addNodeFunction ( std::forward<Args> ( args_ ) ... );
+        assert ( functionSet.numFunctions > 0 );
     }
 
     template<typename ... Args>
     void addCustomNodeFunction ( Args && ... args_ ) {
-        funcSet.addCustomNodeFunction ( std::forward<Args> ( args_ ) ... );
+        functionSet.addCustomNodeFunction ( std::forward<Args> ( args_ ) ... );
     }
 
     // Mutation.
@@ -271,7 +271,7 @@ struct Parameters {
     }
 
     [[ nodiscard ]] int getRandomFunction ( ) const noexcept {
-        return Parameters::randInt ( funcSet.numFunctions );
+        return Parameters::randInt ( functionSet.numFunctions );
     }
 
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
@@ -334,7 +334,7 @@ struct Parameters {
         std::printf ( "Reproduction scheme:\t\t\t%s\n", reproductionSchemeName.c_str ( ) );
         std::printf ( "Update frequency:\t\t\t%d\n", updateFrequency );
         std::printf ( "Threads:\t\t\t%d\n", numThreads );
-        funcSet.print ( );
+        functionSet.printActiveFunctionSet ( );
         std::printf ( "-----------------------------------------------------------\n\n" );
     }
 };
@@ -412,7 +412,7 @@ struct Chromosome {
     template<typename Archive>
     void serialize ( Archive & archive_ ) {
         archive_ ( params.numInputs, params.numNodes, params.numOutputs, params.arity );
-        archive_ ( funcSet );
+        archive_ ( functionSet );
         archive_ ( nodes, outputNodes, activeNodes );
     }
 
@@ -476,7 +476,7 @@ struct Chromosome {
             }
             // Get the functionality of the active node under evaluation and
             // calculate the output of the active node under evaluation.
-            nodes [ currentActiveNode ].output = funcSet.function [ nodes [ currentActiveNode ].function ] ( nodeInputsHold );
+            nodes [ currentActiveNode ].output = functionSet.function [ nodes [ currentActiveNode ].function ] ( nodeInputsHold );
             // Deal with Real's becoming NAN.
             if ( std::isnan ( nodes [ currentActiveNode ].output ) ) {
                 nodes [ currentActiveNode ].output = Real { 0 };
@@ -529,7 +529,7 @@ struct Chromosome {
 
     // Gets the chromosome node arity.
     [[ nodiscard ]] int getChromosomeNodeArity ( const Node<Real> & node_ ) {
-        const int functionArity = funcSet.maxNumInputs [ node_.function ];
+        const int functionArity = functionSet.maxNumInputs [ node_.function ];
         return functionArity == -1 or params.arity < functionArity ? params.arity : functionArity;
     }
 
@@ -546,7 +546,7 @@ struct Chromosome {
         // For all the hidden nodes.
         for ( auto & node : nodes ) {
             // Print the node function.
-            std::printf ( "(%d):\t%s\t", i, funcSet.functionNames [ node.function ] );
+            std::printf ( "(%d):\t%s\t", i, functionSet.functionNames [ node.function ] );
             // For the arity of the node.
             for ( int j = 0; j < getChromosomeNodeArity ( node ); ++j ) {
                 // Print the node input information.
@@ -674,7 +674,7 @@ struct parameters {
     int numNodes;
     int numOutputs;
     int arity;
-    struct functionSet *funcSet;
+    struct functionSet *functionSet;
     double targetFitness;
     int updateFrequency;
     int shortcutConnections;
@@ -700,7 +700,7 @@ struct chromosome {
     int *activeNodes;
     double fitness;
     double *outputValues;
-    struct functionSet *funcSet;
+    struct functionSet *functionSet;
     double *nodeInputsHold;
     int generation;
 };
@@ -996,7 +996,7 @@ DLL_EXPORT struct chromosome *initialiseChromosomeFromChromosome ( struct chromo
     struct chromosome *chromoNew;
     int i;
 
-    /* check that funcSet contains functions*/
+    /* check that functionSet contains functions*/
     if ( chromo == NULL ) {
         printf ( "Error: cannot initialise chromosome from uninitialised chromosome.\nTerminating CGP-Library.\n" );
         exit ( 0 );
@@ -1019,7 +1019,7 @@ DLL_EXPORT struct chromosome *initialiseChromosomeFromChromosome ( struct chromo
 
     /* Initialise each of the chromosomes nodes */
     for ( i = 0; i < chromo->numNodes; i++ ) {
-        chromoNew->nodes [ i ] = initialiseNode ( chromo->numInputs, chromo->numNodes, chromo->arity, chromo->funcSet->numFunctions, 0, 0, i );
+        chromoNew->nodes [ i ] = initialiseNode ( chromo->numInputs, chromo->numNodes, chromo->arity, chromo->functionSet->numFunctions, 0, 0, i );
         copyNode ( chromoNew->nodes [ i ], chromo->nodes [ i ] );
     }
 
@@ -1042,8 +1042,8 @@ DLL_EXPORT struct chromosome *initialiseChromosomeFromChromosome ( struct chromo
     chromoNew->generation = chromo->generation;
 
     /* copy over the functionset */
-    chromoNew->funcSet = ( struct functionSet* )std::malloc ( sizeof ( struct functionSet ) );
-    copyFunctionSet ( chromoNew->funcSet, chromo->funcSet );
+    chromoNew->functionSet = ( struct functionSet* )std::malloc ( sizeof ( struct functionSet ) );
+    copyFunctionSet ( chromoNew->functionSet, chromo->functionSet );
 
     /* set the active nodes in the newly generated chromosome */
     setChromosomeActiveNodes ( chromoNew );
@@ -1237,7 +1237,7 @@ DLL_EXPORT int getNumChromosomeOutputs ( struct chromosome *chromo ) {
 DLL_EXPORT int getChromosomeNodeArity ( struct chromosome *chromo, int index ) {
 
     int chromoArity = chromo->arity;
-    int maxArity = chromo->funcSet->maxNumInputs [ chromo->nodes [ index ]->function ];
+    int maxArity = chromo->functionSet->maxNumInputs [ chromo->nodes [ index ]->function ];
 
     if ( maxArity == -1 ) {
         return chromoArity;
@@ -1766,7 +1766,7 @@ static void pointMutation ( struct parameters *params, struct chromosome *chromo
 
             nodeIndex = geneToMutate;
 
-            chromo->nodes [ nodeIndex ]->function = getRandomFunction ( chromo->funcSet->numFunctions );
+            chromo->nodes [ nodeIndex ]->function = getRandomFunction ( chromo->functionSet->numFunctions );
         }
 
         /* mutate node input gene */
@@ -1825,7 +1825,7 @@ static void singleMutation ( struct parameters *params, struct chromosome *chrom
 
             previousGeneValue = chromo->nodes [ nodeIndex ]->function;
 
-            chromo->nodes [ nodeIndex ]->function = getRandomFunction ( chromo->funcSet->numFunctions );
+            chromo->nodes [ nodeIndex ]->function = getRandomFunction ( chromo->functionSet->numFunctions );
 
             newGeneValue = chromo->nodes [ nodeIndex ]->function;
 
@@ -1888,7 +1888,7 @@ static void probabilisticMutationOnlyActive ( struct parameters *params, struct 
 
         /* mutate the function gene */
         if ( randDecimal ( ) <= params->mutationRate ) {
-            chromo->nodes [ activeNode ]->function = getRandomFunction ( chromo->funcSet->numFunctions );
+            chromo->nodes [ activeNode ]->function = getRandomFunction ( chromo->functionSet->numFunctions );
         }
 
         /* for every input to each chromosome */
