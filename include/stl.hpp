@@ -104,6 +104,9 @@ using vector = std::vector<T>;
 #endif
 
 
+// A pair<> that is is_trivially_copyable and therefor faster than std::pair<>.
+// https://www.reddit.com/r/cpp/comments/ar4ghs/stdpair_disappointing_performance/
+
 template<typename KeyType, typename ValueType>
 struct pair {
     using first_type = KeyType;
