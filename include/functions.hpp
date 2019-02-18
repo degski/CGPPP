@@ -79,15 +79,29 @@ template<typename Real> Real f_square ( const stl::vector<Real> & inputs_ ) noex
 template<typename Real> Real f_cube ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_power ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_exponential ( const stl::vector<Real> & inputs_ ) noexcept;
-template<typename Real> Real f_sine ( const stl::vector<Real> & inputs_ ) noexcept;
-template<typename Real> Real f_cosine ( const stl::vector<Real> & inputs_ ) noexcept;
-template<typename Real> Real f_tangent ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_logarithm ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_sin ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_cos ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_tan ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_asin ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_acos ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_atan ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_randFloat ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_randBern ( const stl::vector<Real> & inputs_ ) noexcept;
-template<typename Real> Real f_constTwo ( const stl::vector<Real> & inputs_ ) noexcept;
-template<typename Real> Real f_constOne ( const stl::vector<Real> & inputs_ ) noexcept;
-template<typename Real> Real f_constZero ( const stl::vector<Real> & inputs_ ) noexcept;
-template<typename Real> Real f_constPI ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_0 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_1 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_2 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_3 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_4 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_5 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_6 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_7 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_8 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_9 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_10 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_16 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_constEuler ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> Real f_constPi ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_and ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_nand ( const stl::vector<Real> & inputs_ ) noexcept;
 template<typename Real> Real f_or ( const stl::vector<Real> & inputs_ ) noexcept;
@@ -186,7 +200,7 @@ struct FunctionSet {
 
     // private:
 
-    static constexpr frozen::unordered_map<frozen::string, FunctionData, 30> function_set {
+    static constexpr frozen::unordered_map<frozen::string, FunctionData, 44> function_set {
         { "add", { function::f_add, -1 } },
         { "sub", { function::f_sub, 2 } },
         { "mul", { function::f_mul, -1 } },
@@ -200,15 +214,29 @@ struct FunctionSet {
         { "cube", { function::f_cube, 1 } },
         { "pow", { function::f_power, 2 } },
         { "exp", { function::f_exponential, 1 } },
-        { "sin", { function::f_sine, 1 } },
-        { "cos", { function::f_cosine, 1 } },
-        { "tan", { function::f_tangent, 1 } },
+        { "log", { function::f_logarithm, 1 } },
+        { "sin", { function::f_sin, 1 } },
+        { "cos", { function::f_cos, 1 } },
+        { "tan", { function::f_tan, 1 } },
+        { "asin", { function::f_asin, 1 } },
+        { "acos", { function::f_acos, 1 } },
+        { "atan", { function::f_atan, 1 } },
         { "rand", { function::f_randFloat, 0 } },
         { "bern", { function::f_randBern, 0 } },
-        { "2", { function::f_constTwo, 0 } },
-        { "1", { function::f_constOne, 0 } },
-        { "0", { function::f_constZero, 0 } },
-        { "pi", { function::f_constPI, 0 } },
+        { "0", { function::f_0, 0 } },
+        { "1", { function::f_1, 0 } },
+        { "2", { function::f_2, 0 } },
+        { "3", { function::f_3, 0 } },
+        { "4", { function::f_4, 0 } },
+        { "5", { function::f_5, 0 } },
+        { "6", { function::f_6, 0 } },
+        { "7", { function::f_7, 0 } },
+        { "8", { function::f_8, 0 } },
+        { "9", { function::f_9, 0 } },
+        { "10", { function::f_10, 0 } },
+        { "16", { function::f_16, 0 } },
+        { "e", { function::f_constEuler, 0 } },
+        { "pi", { function::f_constPi, 0 } },
         { "and", { function::f_and, -1 } },
         { "nand", { function::f_nand, -1 } },
         { "or", { function::f_or, -1 } },
@@ -307,39 +335,88 @@ template<typename Real> Real f_exponential ( const stl::vector<Real> & inputs_ )
     return std::exp ( inputs_ [ 0 ] );
 }
 
+// Node function log.  Returns the exponential of the first input
+template<typename Real> Real f_logarithm ( const stl::vector<Real> & inputs_ ) noexcept {
+    return std::log ( inputs_ [ 0 ] );
+}
+
 // Node function sin.  Returns the sine of the first input
-template<typename Real> Real f_sine ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> Real f_sin ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::sin ( inputs_ [ 0 ] );
 }
 
 // Node function cos.  Returns the cosine of the first input
-template<typename Real> Real f_cosine ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> Real f_cos ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::cos ( inputs_ [ 0 ] );
 }
 
 // Node function tan.  Returns the tangent of the first input
-template<typename Real> Real f_tangent ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> Real f_tan ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::tan ( inputs_ [ 0 ] );
 }
 
-// Node function one.  Always returns 1
-template<typename Real> Real f_constTwo ( const stl::vector<Real> & inputs_ ) noexcept {
-    return 2.0;
+// Node function sin.  Returns the arc sine of the first input
+template<typename Real> Real f_asin ( const stl::vector<Real> & inputs_ ) noexcept {
+    return std::asin ( inputs_ [ 0 ] );
 }
 
-// Node function one.  Always returns 1
-template<typename Real> Real f_constOne ( const stl::vector<Real> & inputs_ ) noexcept {
-    return 1.0;
+// Node function cos.  Returns the arc cosine of the first input
+template<typename Real> Real f_acos ( const stl::vector<Real> & inputs_ ) noexcept {
+    return std::acos ( inputs_ [ 0 ] );
 }
+
+// Node function tan.  Returns the arc tangent of the first input
+template<typename Real> Real f_atan ( const stl::vector<Real> & inputs_ ) noexcept {
+    return std::atan ( inputs_ [ 0 ] );
+}
+
 
 // Node function one.  Always returns 0
-template<typename Real> Real f_constZero ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> Real f_0 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 0.0;
 }
+template<typename Real> Real f_1 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 1.0;
+}
+template<typename Real> Real f_2 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 2.0;
+}
+template<typename Real> Real f_3 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 3.0;
+}
+template<typename Real> Real f_4 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 4.0;
+}
+template<typename Real> Real f_5 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 5.0;
+}
+template<typename Real> Real f_6 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 6.0;
+}
+template<typename Real> Real f_7 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 7.0;
+}
+template<typename Real> Real f_8 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 8.0;
+}
+template<typename Real> Real f_9 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 9.0;
+}
+template<typename Real> Real f_10 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 10.0;
+}
+template<typename Real> Real f_16 ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 16.0;
+}
 
-// Node function one.  Always returns PI
-template<typename Real> Real f_constPI ( const stl::vector<Real> & inputs_ ) noexcept {
-    return 3.141592653589793116;
+// Node function one.  Always returns Euler's number
+template<typename Real> Real f_constEuler ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 2.718'281'828'459'045'091;
+}
+
+// Node function one.  Always returns Pi
+template<typename Real> Real f_constPi ( const stl::vector<Real> & inputs_ ) noexcept {
+    return 3.141'592'653'589'793'116;
 }
 
 // Node function rand.  Returns a random number between minus one and positive one
