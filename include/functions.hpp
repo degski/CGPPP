@@ -210,7 +210,7 @@ struct FunctionSet {
         { "neg", { function::f_negate, 1 } },
         { "abs", { function::f_absolute, 1 } },
         { "sqrt", { function::f_squareRoot, 1 } },
-        { "sq", { function::f_square, 1 } },
+        { "sqr", { function::f_square, 1 } },
         { "cube", { function::f_cube, 1 } },
         { "pow", { function::f_power, 2 } },
         { "exp", { function::f_exponential, 1 } },
@@ -335,7 +335,7 @@ template<typename Real> Real f_exponential ( const stl::vector<Real> & inputs_ )
     return std::exp ( inputs_ [ 0 ] );
 }
 
-// Node function log.  Returns the exponential of the first input
+// Node function log.  Returns the natural logarith of the first input
 template<typename Real> Real f_logarithm ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::log ( inputs_ [ 0 ] );
 }
