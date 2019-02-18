@@ -192,7 +192,7 @@ struct FunctionSet {
         std::cout << "Active Function Set:";
         for ( const auto & name : functionNames )
             std::cout << ' ' << name.data ( );
-        std::cout << " (" << numFunctions << ")\n";
+        std::cout << " (" << numFunctions << ')' << nl;
     }
 
     static void printAll ( ) noexcept {
@@ -200,7 +200,7 @@ struct FunctionSet {
         for ( const auto & name : function_set ) {
             std::cout << ' ' << name.first.data ( );
         }
-        std::cout << " (" << function_set.size ( ) << ")\n";
+        std::cout << " (" << function_set.size ( ) << ')' << nl;
     }
 
     [[ nodiscard ]] static constexpr std::size_t sizeBuiltinFunctionSet ( ) noexcept {
