@@ -70,8 +70,7 @@ int main ( ) {
     fs.addPresetNodeFunction ( "sub" );
     fs.addPresetNodeFunction ( "mul" );
 
-    // std::cout << sizeof ( cgp::Node<Float> ) << nl;
-    // std::cout << sizeof ( cgp::Chromosome<Float> ) << nl;
+    fs.printAll ( );
 
     cgp::Data<Float> ds;
 
