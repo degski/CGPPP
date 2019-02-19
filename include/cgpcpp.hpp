@@ -82,10 +82,12 @@ struct Data {
         stl::vector<Real> output;
     };
 
-    using iterator = typename stl::vector<Record>::iterator;
-    using const_iterator = typename stl::vector<Record>::const_iterator;
+    using DataSet = stl::vector<Record>;
 
-    stl::vector<Record> data;
+    using iterator = typename DataSet::iterator;
+    using const_iterator = typename DataSet::const_iterator;
+
+    DataSet data;
 
     [[ nodiscard ]] iterator begin ( ) noexcept { return data.begin ( ); }
     [[ nodiscard ]] const_iterator begin ( ) const noexcept { return data.cbegin ( ); }
@@ -143,6 +145,15 @@ struct Data {
     }
 };
 
+namespace detail {
+sax::singleton<Data<Float>> singletonDataSet;
+}
+
+using DataSet = typename Data<Float>::DataSet;
+
+auto dataSet = [ ] { return detail::singletonDataSet.instance ( ).data; } ( );
+
+
 
 // Forward declarations.
 
@@ -158,11 +169,11 @@ struct Chromosome;
 template<typename Real = float>
 void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept;
 template<typename Real>
-Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ ) noexcept;
+Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) noexcept;
 template<typename Real>
-void selectFittest ( std::vector<Chromosome<Real>> & parents_, std::vector<Chromosome<Real>> && candidateChromos_ ) noexcept;
+void selectFittest ( stl::vector<Chromosome<Real>> & parents_, stl::vector<Chromosome<Real>> && candidateChromos_ ) noexcept;
 template<typename Real>
-std::vector<Chromosome<Real>> mutateRandomParent ( std::vector<Chromosome<Real>> & parents_, const int numChildren_ ) noexcept;
+void mutateRandomParent ( const stl::vector<Chromosome<Real>> & parents_, stl::vector<Chromosome<Real>> & children_ ) noexcept;
 
 
 template<typename Real>
@@ -186,11 +197,11 @@ struct Parameters {
     bool shortcutConnections;
     void ( * mutationType ) ( Chromosome<Real> & chromo_ );
     std::string mutationTypeName;
-    Real ( * fitnessFunction ) ( Chromosome<Real> & chromo_, const Data<Real> & data_ );
+    Real ( * fitnessFunction ) ( Chromosome<Real> & chromo_, const DataSet & data_ );
     std::string fitnessFunctionName;
-    void ( * selectionScheme ) ( std::vector<Chromosome<Real>> & parents_, std::vector<Chromosome<Real>> && candidateChromos_ );
+    void ( * selectionScheme ) ( stl::vector<Chromosome<Real>> & parents_, stl::vector<Chromosome<Real>> && candidateChromos_ );
     std::string selectionSchemeName;
-    std::vector<Chromosome<Real>> ( * reproductionScheme )( std::vector<Chromosome<Real>> & parents_, const int numChildren_ );
+    void ( * reproductionScheme )( const stl::vector<Chromosome<Real>> & parents_, stl::vector<Chromosome<Real>> & children_ );
     std::string reproductionSchemeName;
 
     int numInputs;
@@ -390,6 +401,10 @@ struct Node {
         return not ( operator == ( rhs_ ) );
     }
 
+    void reset ( ) noexcept {
+        output = Real { 0 };
+    }
+
     friend class cereal::access;
 
     template<typename Archive>
@@ -497,10 +512,17 @@ struct Chromosome {
     }
 
     [[ nodiscard ]] Chromosome mutate ( ) const noexcept {
-        Chromosome mutated = * this;
+        Chromosome mutated = *this;
         params.mutationType ( mutated );
         mutated.setChromosomeActiveNodes ( );
         return mutated;
+    }
+
+    void setFitness ( const DataSet & data_set_ ) noexcept {
+        setChromosomeActiveNodes ( );
+        for ( auto & node : nodes )
+            node.reset ( );
+        fitness = params.fitnessFunction ( * this, data_set_ );
     }
 
     // Set the active nodes in the given chromosome.
@@ -613,7 +635,7 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 // error of the sum of the absolute differences between the target and
 // actual outputs for all outputs over all samples.
 template<typename Real>
-Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ ) noexcept {
+Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) noexcept {
     Real error = Real { 0 };
     for ( const auto & sample : data_ ) {
         chromo_.execute ( sample.input );
@@ -632,7 +654,7 @@ Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ )
 // their fitnesses are equal. A desirable property in CGPPP to
 // facilitate neutral genetic drift.
 template<typename Real>
-void selectFittest ( std::vector<Chromosome<Real>> & parents_, std::vector<Chromosome<Real>> && candidateChromos_ ) noexcept {
+void selectFittest ( stl::vector<Chromosome<Real>> & parents_, stl::vector<Chromosome<Real>> && candidateChromos_ ) noexcept {
     assert ( candidateChromos_.size ( ) >= parents_.size ( ) );
     std::stable_sort ( std::begin ( candidateChromos_ ), std::end ( candidateChromos_ ), [ ] ( const Chromosome<Real> & a, const Chromosome<Real> & b ) { return a.fitness < b.fitness; } );
     candidateChromos_.resize ( parents_.size ( ) );
@@ -642,11 +664,132 @@ void selectFittest ( std::vector<Chromosome<Real>> & parents_, std::vector<Chrom
 
 // Mutate Random parent reproduction method.
 template<typename Real>
-std::vector<Chromosome<Real>> mutateRandomParent ( std::vector<Chromosome<Real>> & parents_, const int numChildren_ ) noexcept {
-    std::vector<Chromosome<Real>> children;
-    children.reserve ( numChildren_ );
-    std::generate_n ( sax::back_emplacer ( children ), numChildren_, [ & parents_ ] { return parents_ [ params.randInt ( parents_.size ( ) ) ].mutate ( ); } );
-    return children;
+void mutateRandomParent ( const stl::vector<Chromosome<Real>> & parents_, stl::vector<Chromosome<Real>> & children_ ) noexcept {
+    children_.clear ( );
+    std::generate_n ( sax::back_emplacer ( children_ ), params.lambda, [ & parents_ ] { return parents_ [ params.randInt ( parents_.size ( ) ) ].mutate ( ); } );
+}
+
+
+template<typename Real>
+Chromosome<Real> runCGPPP ( const int numGens_ ) {
+
+    // BestChromo found using runCGPPP.
+    Chromosome<Real> * bestChromo;
+
+    // Vectors of the parents and children.
+    stl::vector<Chromosome<Real>> parentChromos;
+    stl::vector<Chromosome<Real>> childrenChromos;
+
+    int numCandidateChromos;
+
+    // Initialise parent and children chromosomes.
+    parentChromos.reserve ( params.mu );
+    std::generate_n ( sax::back_emplacer ( parentChromos ), params.mu, [ ] { return Chromosome<Real> { }; } );
+    childrenChromos.reserve ( params.lambda );
+    std::generate_n ( sax::back_emplacer ( childrenChromos ), params.lambda, [ ] { return Chromosome<Real> { }; } );
+
+    // Determine the size of the Candidate Chromos based on the evolutionary Strategy.
+    if ( params.evolutionaryStrategy == '+' )
+        numCandidateChromos = params.mu + params.lambda;
+    else if ( params.evolutionaryStrategy == ',' )
+        numCandidateChromos = params.lambda;
+    else {
+        std::printf ( "Error: the evolutionary strategy '%c' is not known.\nTerminating CGPPP-Library.\n", params.evolutionaryStrategy );
+        exit ( 0 );
+    }
+
+    // Reserve the candidateChromos.
+    childrenChromos.reserve ( numCandidateChromos );
+    std::generate_n ( sax::back_emplacer ( candidateChromos ), numCandidateChromos, [ ] { return Chromosome<Real> { }; } );
+
+    // Set fitness of the parents.
+    for ( auto &  parent : parentChromos )
+        parent.setFitness ( dataSet );
+
+    // show the user whats going on.
+    if ( params.updateFrequency != 0 ) {
+        std::printf ( "\n-- Starting CGPPP --\n\n" );
+        std::printf ( "Gen\tfitness\n" );
+    }
+
+    int gen = 0;
+
+    // for each generation.
+    for ( gen = 0; gen < numGens_; ++gen ) {
+
+        // set fitness of the children of the population.
+        #pragma omp parallel for default ( none ), shared ( params, childrenChromos, dataSet ), schedule ( dynamic ), num_threads ( params.numThreads )
+        for ( auto & child : childrenChromos )
+            child.setFitness ( dataSet );
+
+        // Get best chromosome.
+        Real bestFitness = std::numeric_limits<Real>::max ( );
+        for ( const auto & parent : parentChromos ) {
+            if ( parent.fitness <= bestFitness ) {
+                bestFitness = parent.fitness;
+                bestChromo = & parent;
+            }
+        }
+        for ( const auto & child : childrenChromos ) {
+            if ( child.fitness <= bestFitness ) {
+                bestFitness = child.fitness;
+                bestChromo = & child;
+            }
+        }
+
+        // Check termination conditions.
+        if ( bestFitness <= params.targetFitness ) {
+            if ( params.updateFrequency != 0 ) {
+                std::printf ( "%d\t%f - Solution Found\n", gen, bestChromo->fitness );
+            }
+            break;
+        }
+
+        // Display progress to the user at the update frequency specified.
+        if ( params.updateFrequency != 0 and ( gen % params.updateFrequency == 0 or gen >= numGens_ - 1 ) ) {
+            std::printf ( "%d\t%f\n", gen, bestChromo->fitness );
+        }
+
+        {
+            // Storage for chromosomes used by selection scheme.
+            stl::vector<Chromosome<Real>> candidateChromos;
+            childrenChromos.reserve ( numCandidateChromos );
+
+            // Set the chromosomes which will be used by the selection scheme
+            // dependant upon the evolutionary strategy. i.e. '+' all are used
+            // by the selection scheme, ',' only the children are.
+            if ( params.evolutionaryStrategy == '+' ) {
+
+                // Note: the children are placed before the parents to
+                // ensure 'new blood' is always selected over old if the
+                // fitness are equal.
+
+                for ( int i = 0; i < params.lambda; ++i )
+                    candidateChromos.push_back ( childrenChromos [ i ] );
+                for ( int i = 0; i < params.mu; ++i )
+                    candidateChromos.push_back ( parentChromos [ i ] );
+            }
+            else if ( params.evolutionaryStrategy == ',' ) {
+                for ( int i = 0; i < params.lambda; ++i )
+                    candidateChromos.push_back ( childrenChromos [ i ] );
+            }
+
+            // Select the parents from the candidateChromos.
+            params.selectionScheme ( parentChromos, candidateChromos );
+        }
+
+        // Create the children from the parents.
+        params.reproductionScheme ( parentChromos, childrenChromos );
+    }
+
+    // Deal with formatting for displaying progress.
+    if ( params.updateFrequency != 0 ) {
+        std::printf ( "\n" );
+    }
+
+    bestChromo->generation = gen;
+
+    return *bestChromo;
 }
 
 
@@ -786,7 +929,7 @@ DLL_EXPORT void setNumInputs ( struct parameters *params, int numInputs ) {
         exit ( 0 );
     }
 
-    params->numInputs = numInputs;
+    params.numInputs = numInputs;
 }
 
 
@@ -801,7 +944,7 @@ DLL_EXPORT void setNumNodes ( struct parameters *params, int numNodes ) {
         exit ( 0 );
     }
 
-    params->numNodes = numNodes;
+    params.numNodes = numNodes;
 }
 
 
@@ -816,7 +959,7 @@ DLL_EXPORT void setNumOutputs ( struct parameters *params, int numOutputs ) {
         exit ( 0 );
     }
 
-    params->numOutputs = numOutputs;
+    params.numOutputs = numOutputs;
 }
 
 
@@ -831,7 +974,7 @@ DLL_EXPORT void setArity ( struct parameters *params, int arity ) {
         exit ( 0 );
     }
 
-    params->arity = arity;
+    params.arity = arity;
 }
 
 
@@ -842,10 +985,10 @@ DLL_EXPORT void setArity ( struct parameters *params, int arity ) {
 DLL_EXPORT void setMu ( struct parameters *params, int mu ) {
 
     if ( mu > 0 ) {
-        params->mu = mu;
+        params.mu = mu;
     }
     else {
-        printf ( "\nWarning: mu value '%d' is invalid. Mu value must have a value of one or greater. Mu value left unchanged as '%d'.\n", mu, params->mu );
+        printf ( "\nWarning: mu value '%d' is invalid. Mu value must have a value of one or greater. Mu value left unchanged as '%d'.\n", mu, params.mu );
     }
 }
 
@@ -858,10 +1001,10 @@ DLL_EXPORT void setMu ( struct parameters *params, int mu ) {
 DLL_EXPORT void setLambda ( struct parameters *params, int lambda ) {
 
     if ( lambda > 0 ) {
-        params->lambda = lambda;
+        params.lambda = lambda;
     }
     else {
-        printf ( "\nWarning: lambda value '%d' is invalid. Lambda value must have a value of one or greater. Lambda value left unchanged as '%d'.\n", lambda, params->lambda );
+        printf ( "\nWarning: lambda value '%d' is invalid. Lambda value must have a value of one or greater. Lambda value left unchanged as '%d'.\n", lambda, params.lambda );
     }
 }
 
@@ -874,10 +1017,10 @@ DLL_EXPORT void setLambda ( struct parameters *params, int lambda ) {
 DLL_EXPORT void setEvolutionaryStrategy ( struct parameters *params, char evolutionaryStrategy ) {
 
     if ( evolutionaryStrategy == '+' or evolutionaryStrategy == ',' ) {
-        params->evolutionaryStrategy = evolutionaryStrategy;
+        params.evolutionaryStrategy = evolutionaryStrategy;
     }
     else {
-        printf ( "\nWarning: the evolutionary strategy '%c' is invalid. The evolutionary strategy must be '+' or ','. The evolutionary strategy has been left unchanged as '%c'.\n", evolutionaryStrategy, params->evolutionaryStrategy );
+        printf ( "\nWarning: the evolutionary strategy '%c' is invalid. The evolutionary strategy must be '+' or ','. The evolutionary strategy has been left unchanged as '%c'.\n", evolutionaryStrategy, params.evolutionaryStrategy );
     }
 }
 
@@ -889,10 +1032,10 @@ DLL_EXPORT void setEvolutionaryStrategy ( struct parameters *params, char evolut
 DLL_EXPORT void setRecurrentConnectionProbability ( struct parameters *params, double recurrentConnectionProbability ) {
 
     if ( recurrentConnectionProbability >= 0 and recurrentConnectionProbability <= 1 ) {
-        params->recurrentConnectionProbability = recurrentConnectionProbability;
+        params.recurrentConnectionProbability = recurrentConnectionProbability;
     }
     else {
-        printf ( "\nWarning: recurrent connection probability '%f' is invalid. The recurrent connection probability must be in the range [0,1]. The recurrent connection probability has been left unchanged as '%f'.\n", recurrentConnectionProbability, params->recurrentConnectionProbability );
+        printf ( "\nWarning: recurrent connection probability '%f' is invalid. The recurrent connection probability must be in the range [0,1]. The recurrent connection probability has been left unchanged as '%f'.\n", recurrentConnectionProbability, params.recurrentConnectionProbability );
     }
 }
 
@@ -904,10 +1047,10 @@ DLL_EXPORT void setRecurrentConnectionProbability ( struct parameters *params, d
 DLL_EXPORT void setShortcutConnections ( struct parameters *params, int shortcutConnections ) {
 
     if ( shortcutConnections == 0 or shortcutConnections == 1 ) {
-        params->shortcutConnections = shortcutConnections;
+        params.shortcutConnections = shortcutConnections;
     }
     else {
-        printf ( "\nWarning: shortcut connection '%d' is invalid. The shortcut connections takes values 0 or 1. The shortcut connection has been left unchanged as '%d'.\n", shortcutConnections, params->shortcutConnections );
+        printf ( "\nWarning: shortcut connection '%d' is invalid. The shortcut connections takes values 0 or 1. The shortcut connection has been left unchanged as '%d'.\n", shortcutConnections, params.shortcutConnections );
     }
 }
 
@@ -920,12 +1063,12 @@ DLL_EXPORT void setShortcutConnections ( struct parameters *params, int shortcut
 DLL_EXPORT void setCustomFitnessFunction ( struct parameters *params, double ( *fitnessFunction )( struct parameters *params, struct chromosome *chromo, struct dataSet *data ), char const *fitnessFunctionName ) {
 
     if ( fitnessFunction == NULL ) {
-        params->fitnessFunction = supervisedLearning;
-        strncpy ( params->fitnessFunctionName, "supervisedLearning", FITNESSFUNCTIONNAMELENGTH );
+        params.fitnessFunction = supervisedLearning;
+        strncpy ( params.fitnessFunctionName, "supervisedLearning", FITNESSFUNCTIONNAMELENGTH );
     }
     else {
-        params->fitnessFunction = fitnessFunction;
-        strncpy ( params->fitnessFunctionName, fitnessFunctionName, FITNESSFUNCTIONNAMELENGTH );
+        params.fitnessFunction = fitnessFunction;
+        strncpy ( params.fitnessFunctionName, fitnessFunctionName, FITNESSFUNCTIONNAMELENGTH );
     }
 }
 
@@ -938,12 +1081,12 @@ DLL_EXPORT void setCustomFitnessFunction ( struct parameters *params, double ( *
 DLL_EXPORT void setCustomSelectionScheme ( struct parameters *params, void ( *selectionScheme )( struct parameters *params, struct chromosome **parents, struct chromosome **candidateChromos, int numParents, int numCandidateChromos ), char const *selectionSchemeName ) {
 
     if ( selectionScheme == NULL ) {
-        params->selectionScheme = selectFittest;
-        strncpy ( params->selectionSchemeName, "selectFittest", SELECTIONSCHEMENAMELENGTH );
+        params.selectionScheme = selectFittest;
+        strncpy ( params.selectionSchemeName, "selectFittest", SELECTIONSCHEMENAMELENGTH );
     }
     else {
-        params->selectionScheme = selectionScheme;
-        strncpy ( params->selectionSchemeName, selectionSchemeName, SELECTIONSCHEMENAMELENGTH );
+        params.selectionScheme = selectionScheme;
+        strncpy ( params.selectionSchemeName, selectionSchemeName, SELECTIONSCHEMENAMELENGTH );
     }
 }
 
@@ -956,12 +1099,12 @@ DLL_EXPORT void setCustomSelectionScheme ( struct parameters *params, void ( *se
 DLL_EXPORT void setCustomReproductionScheme ( struct parameters *params, void ( *reproductionScheme )( struct parameters *params, struct chromosome **parents, struct chromosome **children, int numParents, int numChildren ), char const *reproductionSchemeName ) {
 
     if ( reproductionScheme == NULL ) {
-        params->reproductionScheme = mutateRandomParent;
-        strncpy ( params->reproductionSchemeName, "mutateRandomParent", REPRODUCTIONSCHEMENAMELENGTH );
+        params.reproductionScheme = mutateRandomParent;
+        strncpy ( params.reproductionSchemeName, "mutateRandomParent", REPRODUCTIONSCHEMENAMELENGTH );
     }
     else {
-        params->reproductionScheme = reproductionScheme;
-        strncpy ( params->reproductionSchemeName, reproductionSchemeName, REPRODUCTIONSCHEMENAMELENGTH );
+        params.reproductionScheme = reproductionScheme;
+        strncpy ( params.reproductionSchemeName, reproductionSchemeName, REPRODUCTIONSCHEMENAMELENGTH );
     }
 }
 
@@ -974,31 +1117,31 @@ DLL_EXPORT void setMutationType ( struct parameters *params, char const *mutatio
 
     if ( strncmp ( mutationType, "probabilistic", MUTATIONTYPENAMELENGTH ) == 0 ) {
 
-        params->mutationType = probabilisticMutation;
-        strncpy ( params->mutationTypeName, "probabilistic", MUTATIONTYPENAMELENGTH );
+        params.mutationType = probabilisticMutation;
+        strncpy ( params.mutationTypeName, "probabilistic", MUTATIONTYPENAMELENGTH );
     }
 
     else if ( strncmp ( mutationType, "point", MUTATIONTYPENAMELENGTH ) == 0 ) {
 
-        params->mutationType = pointMutation;
-        strncpy ( params->mutationTypeName, "point", MUTATIONTYPENAMELENGTH );
+        params.mutationType = pointMutation;
+        strncpy ( params.mutationTypeName, "point", MUTATIONTYPENAMELENGTH );
     }
 
 
     else if ( strncmp ( mutationType, "onlyActive", MUTATIONTYPENAMELENGTH ) == 0 ) {
 
-        params->mutationType = probabilisticMutationOnlyActive;
-        strncpy ( params->mutationTypeName, "onlyActive", MUTATIONTYPENAMELENGTH );
+        params.mutationType = probabilisticMutationOnlyActive;
+        strncpy ( params.mutationTypeName, "onlyActive", MUTATIONTYPENAMELENGTH );
     }
 
     else if ( strncmp ( mutationType, "single", MUTATIONTYPENAMELENGTH ) == 0 ) {
 
-        params->mutationType = singleMutation;
-        strncpy ( params->mutationTypeName, "single", MUTATIONTYPENAMELENGTH );
+        params.mutationType = singleMutation;
+        strncpy ( params.mutationTypeName, "single", MUTATIONTYPENAMELENGTH );
     }
 
     else {
-        printf ( "\nWarning: mutation type '%s' is invalid. The mutation type must be 'probabilistic' or 'point'. The mutation type has been left unchanged as '%s'.\n", mutationType, params->mutationTypeName );
+        printf ( "\nWarning: mutation type '%s' is invalid. The mutation type must be 'probabilistic' or 'point'. The mutation type has been left unchanged as '%s'.\n", mutationType, params.mutationTypeName );
     }
 }
 
@@ -1009,10 +1152,10 @@ DLL_EXPORT void setMutationType ( struct parameters *params, char const *mutatio
 DLL_EXPORT void setUpdateFrequency ( struct parameters *params, int updateFrequency ) {
 
     if ( updateFrequency < 0 ) {
-        printf ( "Warning: update frequency of %d is invalid. Update frequency must be >= 0. Update frequency is left unchanged as %d.\n", updateFrequency, params->updateFrequency );
+        printf ( "Warning: update frequency of %d is invalid. Update frequency must be >= 0. Update frequency is left unchanged as %d.\n", updateFrequency, params.updateFrequency );
     }
     else {
-        params->updateFrequency = updateFrequency;
+        params.updateFrequency = updateFrequency;
     }
 }
 
@@ -1204,7 +1347,7 @@ DLL_EXPORT int compareChromosomesActiveNodes ( struct chromosome *chromoA, struc
 */
 DLL_EXPORT void mutateChromosome ( struct parameters *params, struct chromosome *chromo ) {
 
-    params->mutationType ( params, chromo );
+    params.mutationType ( params, chromo );
 
     setChromosomeActiveNodes ( chromo );
 }
@@ -1223,7 +1366,7 @@ DLL_EXPORT void setChromosomeFitness ( struct parameters *params, struct chromos
 
     resetChromosome ( chromo );
 
-    fitness = params->fitnessFunction ( params, chromo, data );
+    fitness = params.fitnessFunction ( params, chromo, data );
 
     chromo->fitness = fitness;
 }
@@ -1760,15 +1903,15 @@ static void pointMutation ( struct parameters *params, struct chromosome *chromo
     int nodeInputIndex;
 
     /* get the number of each type of gene */
-    numFunctionGenes = params->numNodes;
-    numInputGenes = params->numNodes * params->arity;
-    numOutputGenes = params->numOutputs;
+    numFunctionGenes = params.numNodes;
+    numInputGenes = params.numNodes * params.arity;
+    numOutputGenes = params.numOutputs;
 
     /* set the total number of chromosome genes */
     numGenes = numFunctionGenes + numInputGenes + numOutputGenes;
 
     /* calculate the number of genes to mutate */
-    numGenesToMutate = ( int ) roundf ( numGenes * params->mutationRate );
+    numGenesToMutate = ( int ) roundf ( numGenes * params.mutationRate );
 
     /* for the number of genes to mutate */
     for ( i = 0; i < numGenesToMutate; i++ ) {
@@ -1790,13 +1933,13 @@ static void pointMutation ( struct parameters *params, struct chromosome *chromo
             nodeIndex = ( int ) ( ( geneToMutate - numFunctionGenes ) / chromo->arity );
             nodeInputIndex = ( geneToMutate - numFunctionGenes ) % chromo->arity;
 
-            chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, nodeIndex, params->recurrentConnectionProbability );
+            chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, nodeIndex, params.recurrentConnectionProbability );
         }
 
         /* mutate output gene */
         else {
             nodeIndex = geneToMutate - numFunctionGenes - numInputGenes;
-            chromo->outputNodes [ nodeIndex ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params->shortcutConnections );
+            chromo->outputNodes [ nodeIndex ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params.shortcutConnections );
         }
     }
 }
@@ -1820,9 +1963,9 @@ static void singleMutation ( struct parameters *params, struct chromosome *chrom
     int newGeneValue;
 
     /* get the number of each type of gene */
-    numFunctionGenes = params->numNodes;
-    numInputGenes = params->numNodes * params->arity;
-    numOutputGenes = params->numOutputs;
+    numFunctionGenes = params.numNodes;
+    numInputGenes = params.numNodes * params.arity;
+    numOutputGenes = params.numOutputs;
 
     /* set the total number of chromosome genes */
     numGenes = numFunctionGenes + numInputGenes + numOutputGenes;
@@ -1858,7 +2001,7 @@ static void singleMutation ( struct parameters *params, struct chromosome *chrom
 
             previousGeneValue = chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ];
 
-            chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, nodeIndex, params->recurrentConnectionProbability );
+            chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, nodeIndex, params.recurrentConnectionProbability );
 
             newGeneValue = chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ];
 
@@ -1873,7 +2016,7 @@ static void singleMutation ( struct parameters *params, struct chromosome *chrom
 
             previousGeneValue = chromo->outputNodes [ nodeIndex ];
 
-            chromo->outputNodes [ nodeIndex ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params->shortcutConnections );
+            chromo->outputNodes [ nodeIndex ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params.shortcutConnections );
 
             newGeneValue = chromo->outputNodes [ nodeIndex ];
 
@@ -1902,31 +2045,31 @@ static void probabilisticMutationOnlyActive ( struct parameters *params, struct 
         activeNode = chromo->activeNodes [ i ];
 
         /* mutate the function gene */
-        if ( randDecimal ( ) <= params->mutationRate ) {
+        if ( randDecimal ( ) <= params.mutationRate ) {
             chromo->nodes [ activeNode ]->function = getRandomFunction ( chromo->functionSet->numFunctions );
         }
 
         /* for every input to each chromosome */
-        for ( j = 0; j < params->arity; j++ ) {
+        for ( j = 0; j < params.arity; j++ ) {
 
             /* mutate the node input */
-            if ( randDecimal ( ) <= params->mutationRate ) {
-                chromo->nodes [ activeNode ]->inputs [ j ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, activeNode, params->recurrentConnectionProbability );
+            if ( randDecimal ( ) <= params.mutationRate ) {
+                chromo->nodes [ activeNode ]->inputs [ j ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, activeNode, params.recurrentConnectionProbability );
             }
 
             /* mutate the node connection weight */
-            if ( randDecimal ( ) <= params->mutationRate ) {
-                chromo->nodes [ activeNode ]->weights [ j ] = getRandomConnectionWeight ( params->connectionWeightRange );
+            if ( randDecimal ( ) <= params.mutationRate ) {
+                chromo->nodes [ activeNode ]->weights [ j ] = getRandomConnectionWeight ( params.connectionWeightRange );
             }
         }
     }
 
     /* for every chromosome output */
-    for ( i = 0; i < params->numOutputs; i++ ) {
+    for ( i = 0; i < params.numOutputs; i++ ) {
 
         /* mutate the chromosome output */
-        if ( randDecimal ( ) <= params->mutationRate ) {
-            chromo->outputNodes [ i ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params->shortcutConnections );
+        if ( randDecimal ( ) <= params.mutationRate ) {
+            chromo->outputNodes [ i ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params.shortcutConnections );
         }
     }
 }
@@ -1939,17 +2082,17 @@ DLL_EXPORT struct results* repeatCGP ( struct parameters *params, struct dataSet
 
     int i;
     struct results *rels;
-    int updateFrequency = params->updateFrequency;
+    int updateFrequency = params.updateFrequency;
 
     /* set the update frequency so as to to so generational results */
-    params->updateFrequency = 0;
+    params.updateFrequency = 0;
 
     rels = initialiseResults ( params, numRuns );
 
     printf ( "Run\tFitness\t\tGenerations\tActive Nodes\n" );
 
     /* for each run */
-#pragma omp parallel for default(none), shared(numRuns,rels,params,data,numGens), schedule(dynamic), num_threads(params->numThreads)
+#pragma omp parallel for default(none), shared(numRuns,rels,params,data,numGens), schedule(dynamic), num_threads(params.numThreads)
     for ( i = 0; i < numRuns; i++ ) {
 
         /* run cgp */
@@ -1964,7 +2107,7 @@ DLL_EXPORT struct results* repeatCGP ( struct parameters *params, struct dataSet
     printf ( "----------------------------------------------------\n\n" );
 
     /* restore the original value for the update frequency */
-    params->updateFrequency = updateFrequency;
+    params.updateFrequency = updateFrequency;
 
     return rels;
 }
@@ -1992,29 +2135,29 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
         exit ( 0 );
     }
 
-    if ( data != NULL and params->numInputs != data->numInputs ) {
-        printf ( "Error: The number of inputs specified in the dataSet (%d) does not match the number of inputs specified in the parameters (%d).\n", data->numInputs, params->numInputs );
+    if ( data != NULL and params.numInputs != data->numInputs ) {
+        printf ( "Error: The number of inputs specified in the dataSet (%d) does not match the number of inputs specified in the parameters (%d).\n", data->numInputs, params.numInputs );
         printf ( "Terminating CGP-Library.\n" );
         exit ( 0 );
     }
 
-    if ( data != NULL and params->numOutputs != data->numOutputs ) {
-        printf ( "Error: The number of outputs specified in the dataSet (%d) does not match the number of outputs specified in the parameters (%d).\n", data->numOutputs, params->numOutputs );
+    if ( data != NULL and params.numOutputs != data->numOutputs ) {
+        printf ( "Error: The number of outputs specified in the dataSet (%d) does not match the number of outputs specified in the parameters (%d).\n", data->numOutputs, params.numOutputs );
         printf ( "Terminating CGP-Library.\n" );
         exit ( 0 );
     }
 
     /* initialise parent chromosomes */
-    parentChromos = ( struct chromosome** )std::malloc ( params->mu * sizeof ( struct chromosome* ) );
+    parentChromos = ( struct chromosome** )std::malloc ( params.mu * sizeof ( struct chromosome* ) );
 
-    for ( i = 0; i < params->mu; i++ ) {
+    for ( i = 0; i < params.mu; i++ ) {
         parentChromos [ i ] = initialiseChromosome ( params );
     }
 
     /* initialise children chromosomes */
-    childrenChromos = ( struct chromosome** )std::malloc ( params->lambda * sizeof ( struct chromosome* ) );
+    childrenChromos = ( struct chromosome** )std::malloc ( params.lambda * sizeof ( struct chromosome* ) );
 
-    for ( i = 0; i < params->lambda; i++ ) {
+    for ( i = 0; i < params.lambda; i++ ) {
         childrenChromos [ i ] = initialiseChromosome ( params );
     }
 
@@ -2022,14 +2165,14 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
     bestChromo = initialiseChromosome ( params );
 
     /* determine the size of the Candidate Chromos based on the evolutionary Strategy */
-    if ( params->evolutionaryStrategy == '+' ) {
-        numCandidateChromos = params->mu + params->lambda;
+    if ( params.evolutionaryStrategy == '+' ) {
+        numCandidateChromos = params.mu + params.lambda;
     }
-    else if ( params->evolutionaryStrategy == ',' ) {
-        numCandidateChromos = params->lambda;
+    else if ( params.evolutionaryStrategy == ',' ) {
+        numCandidateChromos = params.lambda;
     }
     else {
-        printf ( "Error: the evolutionary strategy '%c' is not known.\nTerminating CGP-Library.\n", params->evolutionaryStrategy );
+        printf ( "Error: the evolutionary strategy '%c' is not known.\nTerminating CGP-Library.\n", params.evolutionaryStrategy );
         exit ( 0 );
     }
 
@@ -2041,12 +2184,12 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
     }
 
     /* set fitness of the parents */
-    for ( i = 0; i < params->mu; i++ ) {
+    for ( i = 0; i < params.mu; i++ ) {
         setChromosomeFitness ( params, parentChromos [ i ], data );
     }
 
     /* show the user whats going on */
-    if ( params->updateFrequency != 0 ) {
+    if ( params.updateFrequency != 0 ) {
         printf ( "\n-- Starting CGP --\n\n" );
         printf ( "Gen\tfitness\n" );
     }
@@ -2055,18 +2198,18 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
     for ( gen = 0; gen < numGens; gen++ ) {
 
         /* set fitness of the children of the population */
-    #pragma omp parallel for default(none), shared(params, childrenChromos,data), schedule(dynamic), num_threads(params->numThreads)
-        for ( i = 0; i < params->lambda; i++ ) {
+    #pragma omp parallel for default(none), shared(params, childrenChromos,data), schedule(dynamic), num_threads(params.numThreads)
+        for ( i = 0; i < params.lambda; i++ ) {
             setChromosomeFitness ( params, childrenChromos [ i ], data );
         }
 
         /* get best chromosome */
-        getBestChromosome ( parentChromos, childrenChromos, params->mu, params->lambda, bestChromo );
+        getBestChromosome ( parentChromos, childrenChromos, params.mu, params.lambda, bestChromo );
 
         /* check termination conditions */
-        if ( getChromosomeFitness ( bestChromo ) <= params->targetFitness ) {
+        if ( getChromosomeFitness ( bestChromo ) <= params.targetFitness ) {
 
-            if ( params->updateFrequency != 0 ) {
+            if ( params.updateFrequency != 0 ) {
                 printf ( "%d\t%f - Solution Found\n", gen, bestChromo->fitness );
             }
 
@@ -2074,7 +2217,7 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
         }
 
         /* display progress to the user at the update frequency specified */
-        if ( params->updateFrequency != 0 and ( gen % params->updateFrequency == 0 or gen >= numGens - 1 ) ) {
+        if ( params.updateFrequency != 0 and ( gen % params.updateFrequency == 0 or gen >= numGens - 1 ) ) {
             printf ( "%d\t%f\n", gen, bestChromo->fitness );
         }
 
@@ -2083,7 +2226,7 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
             dependant upon the evolutionary strategy. i.e. '+' all are used
             by the selection scheme, ',' only the children are.
         */
-        if ( params->evolutionaryStrategy == '+' ) {
+        if ( params.evolutionaryStrategy == '+' ) {
 
             /*
                 Note: the children are placed before the parents to
@@ -2093,15 +2236,15 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
 
             for ( i = 0; i < numCandidateChromos; i++ ) {
 
-                if ( i < params->lambda ) {
+                if ( i < params.lambda ) {
                     copyChromosome ( candidateChromos [ i ], childrenChromos [ i ] );
                 }
                 else {
-                    copyChromosome ( candidateChromos [ i ], parentChromos [ i - params->lambda ] );
+                    copyChromosome ( candidateChromos [ i ], parentChromos [ i - params.lambda ] );
                 }
             }
         }
-        else if ( params->evolutionaryStrategy == ',' ) {
+        else if ( params.evolutionaryStrategy == ',' ) {
 
             for ( i = 0; i < numCandidateChromos; i++ ) {
                 copyChromosome ( candidateChromos [ i ], childrenChromos [ i ] );
@@ -2109,14 +2252,14 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
         }
 
         /* select the parents from the candidateChromos */
-        params->selectionScheme ( params, parentChromos, candidateChromos, params->mu, numCandidateChromos );
+        params.selectionScheme ( params, parentChromos, candidateChromos, params.mu, numCandidateChromos );
 
         /* create the children from the parents */
-        params->reproductionScheme ( params, parentChromos, childrenChromos, params->mu, params->lambda );
+        params.reproductionScheme ( params, parentChromos, childrenChromos, params.mu, params.lambda );
     }
 
     /* deal with formatting for displaying progress */
-    if ( params->updateFrequency != 0 ) {
+    if ( params.updateFrequency != 0 ) {
         printf ( "\n" );
     }
 
@@ -2125,13 +2268,13 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
     /*copyChromosome(chromo, bestChromo);*/
 
     /* free parent chromosomes */
-    for ( i = 0; i < params->mu; i++ ) {
+    for ( i = 0; i < params.mu; i++ ) {
         freeChromosome ( parentChromos [ i ] );
     }
     free ( parentChromos );
 
     /* free children chromosomes */
-    for ( i = 0; i < params->lambda; i++ ) {
+    for ( i = 0; i < params.lambda; i++ ) {
         freeChromosome ( childrenChromos [ i ] );
     }
     free ( childrenChromos );
