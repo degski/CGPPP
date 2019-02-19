@@ -161,6 +161,8 @@ template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ ) noexcept;
 template<typename Real>
 void selectFittest ( std::vector<Chromosome<Real>> & parents_, std::vector<Chromosome<Real>> && candidateChromos_ ) noexcept;
+template<typename Real>
+std::vector<Chromosome<Real>> mutateRandomParent ( std::vector<Chromosome<Real>> & parents_, const int numChildren_ ) noexcept;
 
 
 template<typename Real>
@@ -182,13 +184,13 @@ struct Parameters {
     Real targetFitness;
     int updateFrequency;
     bool shortcutConnections;
-    void ( *mutationType ) ( Chromosome<Real> & chromo_ );
+    void ( * mutationType ) ( Chromosome<Real> & chromo_ );
     std::string mutationTypeName;
-    Real ( *fitnessFunction ) ( Chromosome<Real> & chromo_, const Data<Real> & data_ );
+    Real ( * fitnessFunction ) ( Chromosome<Real> & chromo_, const Data<Real> & data_ );
     std::string fitnessFunctionName;
-    void ( *selectionScheme ) ( std::vector<Chromosome<Real>> & parents_, std::vector<Chromosome<Real>> && candidateChromos_ );
+    void ( * selectionScheme ) ( std::vector<Chromosome<Real>> & parents_, std::vector<Chromosome<Real>> && candidateChromos_ );
     std::string selectionSchemeName;
-    //void ( *reproductionScheme )( Chromosome<Real> & *parents, Chromosome<Real> & *children, int numParents, int numChildren );
+    std::vector<Chromosome<Real>> ( * reproductionScheme )( std::vector<Chromosome<Real>> & parents_, const int numChildren_ );
     std::string reproductionSchemeName;
 
     int numInputs;
@@ -215,7 +217,7 @@ struct Parameters {
         fitnessFunctionName { "supervisedLearning" },
         selectionScheme { selectFittest },
         selectionSchemeName { "selectFittest" },
- //     reproductionScheme { mutateRandomParent },
+        reproductionScheme { mutateRandomParent },
         reproductionSchemeName { "mutateRandomParent" },
         numInputs { 0 },
         numNodes { 0 },
@@ -366,7 +368,7 @@ struct Node {
     Node ( ) = delete;
     Node ( const Node & ) = default;
     Node ( Node && ) noexcept = default;
-    Node ( const int nodePosition_ ) :
+    explicit Node ( const int nodePosition_ ) :
 
         function { params.getRandomFunction ( ) },
         active { true },
@@ -438,13 +440,13 @@ struct Chromosome {
 
     Chromosome ( ) :
 
-        outputValues { params.numOutputs },
-        nodeInputsHold { params.arity },
+        outputValues ( params.numOutputs ),
+        nodeInputsHold ( params.arity ),
         fitness { Real { -1 } },
         generation { 0 } {
 
         nodes.reserve ( params.numNodes );
-        std::generate_n ( sax::back_emplacer ( nodes ), params.numNodes, [ this ] { return Node<Real> { nodes.size ( ) }; } );
+        std::generate_n ( sax::back_emplacer ( nodes ), params.numNodes, [ this ] { return Node<Real> ( static_cast<int> ( nodes.size ( ) ) ); } );
 
         outputNodes.reserve ( params.numOutputs );
         std::generate_n ( sax::back_emplacer ( outputNodes ), params.numOutputs, [ ] { return params.getRandomChromosomeOutput ( ); } );
@@ -492,6 +494,13 @@ struct Chromosome {
         for ( int i = 0; i < params.numOutputs; ++i ) {
             outputValues [ i ] = outputNodes [ i ] < params.numInputs ? inputs_ [ outputNodes [ i ] ] : nodes [ outputNodes [ i ] - params.numInputs ].output;
         }
+    }
+
+    [[ nodiscard ]] Chromosome mutate ( ) const noexcept {
+        Chromosome mutated = * this;
+        params.mutationType ( mutated );
+        mutated.setChromosomeActiveNodes ( );
+        return mutated;
     }
 
     // Set the active nodes in the given chromosome.
@@ -584,7 +593,7 @@ template<typename Real>
 void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
     int nodePosition = 0;
     for ( auto & node : chromo_.nodes ) {
-        // mutate the function gene
+        // Mutate the function gene.
         if ( params.mutate ( ) )
             node.function = params.getRandomFunction ( );
         for ( auto & input : node.inputs ) {
@@ -628,6 +637,16 @@ void selectFittest ( std::vector<Chromosome<Real>> & parents_, std::vector<Chrom
     std::stable_sort ( std::begin ( candidateChromos_ ), std::end ( candidateChromos_ ), [ ] ( const Chromosome<Real> & a, const Chromosome<Real> & b ) { return a.fitness < b.fitness; } );
     candidateChromos_.resize ( parents_.size ( ) );
     parents_ = std::move ( candidateChromos_ );
+}
+
+
+// Mutate Random parent reproduction method.
+template<typename Real>
+std::vector<Chromosome<Real>> mutateRandomParent ( std::vector<Chromosome<Real>> & parents_, const int numChildren_ ) noexcept {
+    std::vector<Chromosome<Real>> children;
+    children.reserve ( numChildren_ );
+    std::generate_n ( sax::back_emplacer ( children ), numChildren_, [ & parents_ ] { return parents_ [ params.randInt ( parents_.size ( ) ) ].mutate ( ); } );
+    return children;
 }
 
 
