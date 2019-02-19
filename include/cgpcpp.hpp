@@ -439,7 +439,7 @@ struct Chromosome {
         std::ofstream ostream ( std::move ( path_ ) / ( std::move ( file_name_ ) + std::string ( ".chromo" ) ), std::ios::binary );
         {
             cereal::BinaryOutputArchive archive ( ostream );
-            archive ( * this );
+            archive ( *this );
         }
         ostream.close ( );
     }
@@ -448,7 +448,7 @@ struct Chromosome {
         std::ifstream istream ( std::move ( path_ ) / ( std::move ( file_name_ ) + std::string ( ".chromo" ) ), std::ios::binary );
         {
             cereal::BinaryInputArchive archive ( istream );
-            archive ( * this );
+            archive ( *this );
         }
         istream.close ( );
     }
@@ -461,7 +461,7 @@ struct Chromosome {
         generation { 0 } {
 
         nodes.reserve ( params.numNodes );
-        std::generate_n ( sax::back_emplacer ( nodes ), params.numNodes, [ this ] { return Node<Real> ( static_cast<int> ( nodes.size ( ) ) ); } );
+        std::generate_n ( sax::back_emplacer ( nodes ), params.numNodes, [ this ] { return Node<Real> ( static_cast< int > ( nodes.size ( ) ) ); } );
 
         outputNodes.reserve ( params.numOutputs );
         std::generate_n ( sax::back_emplacer ( outputNodes ), params.numOutputs, [ ] { return params.getRandomChromosomeOutput ( ); } );
@@ -469,10 +469,25 @@ struct Chromosome {
         activeNodes.reserve ( params.numNodes );
         setChromosomeActiveNodes ( );
     }
-    Chromosome ( const Chromosome & ) = default;
+    Chromosome ( const Chromosome & rhs_ ) :
+        nodes ( rhs_.nodes ),
+        outputNodes ( rhs_.outputNodes ),
+        activeNodes ( rhs_.activeNodes ),
+        fitness ( rhs_.fitness ),
+        generation ( rhs_.generation ) {
+    }
+
     Chromosome ( Chromosome && ) noexcept = default;
 
-    [[ maybe_unused ]] Chromosome & operator = ( const Chromosome & ) = default;
+    [[ maybe_unused ]] Chromosome & operator = ( const Chromosome & rhs_ ) {
+        nodes = rhs_.nodes;
+        outputNodes = rhs_.outputNodes;
+        activeNodes = rhs_.activeNodes;
+        fitness = rhs_.fitness;
+        generation = rhs_.generation;
+        return * this;
+    }
+
     [[ maybe_unused ]] Chromosome & operator = ( Chromosome && ) noexcept = default;
 
     [[ nodiscard ]] bool operator == ( const Chromosome & rhs_ ) const noexcept {
@@ -661,6 +676,14 @@ void selectFittest ( stl::vector<Chromosome<Real>> & parents_, stl::vector<Chrom
     parents_ = std::move ( candidateChromos_ );
 }
 
+using chromos_iterator = typename stl::vector<Chromosome<Float>>::iterator;
+
+template<typename Real>
+void selectFittest ( chromos_iterator parents_begin_, chromos_iterator parents_end_, chromos_iterator candidates_begin_, chromos_iterator candidates_end_ ) noexcept {
+    std::stable_sort ( candidates_begin_, candidates_end_, [ ] ( const Chromosome<Real> & a, const Chromosome<Real> & b ) { return a.fitness < b.fitness; } );
+    //std::move (
+}
+
 
 // Mutate Random parent reproduction method.
 template<typename Real>
@@ -674,7 +697,7 @@ template<typename Real>
 Chromosome<Real> runCGPPP ( const int numGens_ ) {
 
     // BestChromo found using runCGPPP.
-    Chromosome<Real> * bestChromo;
+    Chromosome<Real> bestChromo;
 
     // Vectors of the parents and children.
     stl::vector<Chromosome<Real>> parentChromos;
@@ -698,10 +721,6 @@ Chromosome<Real> runCGPPP ( const int numGens_ ) {
         exit ( 0 );
     }
 
-    // Reserve the candidateChromos.
-    childrenChromos.reserve ( numCandidateChromos );
-    std::generate_n ( sax::back_emplacer ( candidateChromos ), numCandidateChromos, [ ] { return Chromosome<Real> { }; } );
-
     // Set fitness of the parents.
     for ( auto &  parent : parentChromos )
         parent.setFitness ( dataSet );
@@ -723,19 +742,23 @@ Chromosome<Real> runCGPPP ( const int numGens_ ) {
             child.setFitness ( dataSet );
 
         // Get best chromosome.
+        Chromosome<Real> * bestChromoPtr = nullptr;
         Real bestFitness = std::numeric_limits<Real>::max ( );
+
         for ( const auto & parent : parentChromos ) {
             if ( parent.fitness <= bestFitness ) {
                 bestFitness = parent.fitness;
-                bestChromo = & parent;
+                bestChromoPtr = & parent;
             }
         }
         for ( const auto & child : childrenChromos ) {
             if ( child.fitness <= bestFitness ) {
                 bestFitness = child.fitness;
-                bestChromo = & child;
+                bestChromoPtr = & child;
             }
         }
+
+        bestChromo = * bestChromoPtr;
 
         // Check termination conditions.
         if ( bestFitness <= params.targetFitness ) {
@@ -750,6 +773,7 @@ Chromosome<Real> runCGPPP ( const int numGens_ ) {
             std::printf ( "%d\t%f\n", gen, bestChromo->fitness );
         }
 
+        // Select and reproduce.
         {
             // Storage for chromosomes used by selection scheme.
             stl::vector<Chromosome<Real>> candidateChromos;
@@ -789,7 +813,107 @@ Chromosome<Real> runCGPPP ( const int numGens_ ) {
 
     bestChromo->generation = gen;
 
-    return *bestChromo;
+    return bestChromo;
+}
+
+
+
+template<typename Real>
+Chromosome<Real> runCGPPP2 ( const int numGens_ ) {
+
+    // BestChromo found using runCGPPP.
+    Chromosome<Real> bestChromo;
+
+    // Vector of the children (params.lambda) and parents (params.mu).
+    stl::vector<Chromosome<Real>> chromos;
+
+    int numCandidateChromos;
+
+    // Initialise parent and children chromosomes.
+    chromos.reserve ( params.lambda, params.mu );
+    std::generate_n ( sax::back_emplacer ( chromos ), chromos.capacity ( ), [ ] { return Chromosome<Real> { }; } );
+
+    // Determine the size of the Candidate Chromos based on the evolutionary Strategy.
+    if ( params.evolutionaryStrategy == '+' )
+        numCandidateChromos = params.mu + params.lambda;
+    else if ( params.evolutionaryStrategy == ',' )
+        numCandidateChromos = params.lambda;
+    else {
+        std::printf ( "Error: the evolutionary strategy '%c' is not known.\nTerminating CGPPP-Library.\n", params.evolutionaryStrategy );
+        exit ( 0 );
+    }
+
+    // Set fitness of the parents.
+    std::for_each ( std::begin ( chromos ) + params.lambda, std::end ( chromos ), [ ] ( Chromosome<Real> & p ) { p.setFitness ( dataSet ); } );
+
+    // show the user whats going on.
+    if ( params.updateFrequency != 0 ) {
+        std::printf ( "\n-- Starting CGPPP --\n\n" );
+        std::printf ( "Gen\tfitness\n" );
+    }
+
+    int gen = 0;
+
+    // For each generation.
+    for ( gen = 0; gen < numGens_; ++gen ) {
+
+        // Set fitness of the children of the population.
+        std::for_each ( std::begin ( chromos ), std::begin ( chromos ) + params.lambda, [ ] ( Chromosome<Real> & p ) { p.setFitness ( dataSet ); } );
+
+        // Get best chromosome.
+        Chromosome<Real> * bestChromoPtr = nullptr;
+        Real bestFitness = std::numeric_limits<Real>::max ( );
+        for ( const auto & chromo : chromos ) {
+            if ( chromo.fitness <= bestFitness ) {
+                bestFitness = chromo.fitness;
+                bestChromoPtr = & chromo;
+            }
+        }
+        bestChromo = *bestChromoPtr;
+
+        // Check termination conditions.
+        if ( bestFitness <= params.targetFitness ) {
+            if ( params.updateFrequency != 0 ) {
+                std::printf ( "%d\t%f - Solution Found\n", gen, bestChromo->fitness );
+            }
+            break;
+        }
+
+        // Display progress to the user at the update frequency specified.
+        if ( params.updateFrequency != 0 and ( gen % params.updateFrequency == 0 or gen >= numGens_ - 1 ) ) {
+            std::printf ( "%d\t%f\n", gen, bestChromo->fitness );
+        }
+
+        // Select and reproduce.
+
+        // Set the chromosomes which will be used by the selection scheme
+        // dependant upon the evolutionary strategy. i.e. '+' all are used
+        // by the selection scheme, ',' only the children are.
+        if ( params.evolutionaryStrategy == '+' ) {
+
+            // Note: the children are placed before the parents to
+            // ensure 'new blood' is always selected over old if the
+            // fitness are equal.
+
+            params.reproductionScheme ( chromos, std::begin ( chromos ), std::end ( chromos ) );
+        }
+        else if ( params.evolutionaryStrategy == ',' ) {
+
+            params.reproductionScheme ( chromos, std::begin ( chromos ), std::begin ( chromos ) + params.lambda );
+        }
+
+        // Create the children from the parents.
+        //params.reproductionScheme ( parentChromos, childrenChromos );
+    }
+
+    // Deal with formatting for displaying progress.
+    if ( params.updateFrequency != 0 ) {
+        std::printf ( "\n" );
+    }
+
+    bestChromo->generation = gen;
+
+    return bestChromo;
 }
 
 

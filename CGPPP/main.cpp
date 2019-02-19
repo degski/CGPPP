@@ -58,8 +58,36 @@ namespace fs = std::filesystem;
 
 #include <experimental/fixed_capacity_vector> // https://github.com/gnzlbg/static_vector
 
+struct chr {
+
+    int v;
+    char n;
+};
+
+template<typename Stream>
+Stream & operator << ( Stream & out_, const chr & v_ ) noexcept {
+    out_ << '<' << v_.n << ' ' << v_.v << '>';
+    return out_;
+}
+
+
 
 int main ( ) {
+
+    std::vector<chr> v { { 5, 'c' }, { 9, 'c' }, { 2, 'c' }, { 7, 'c' }, { 5, 'p' }, { 1, 'p' }, { 1, 'c' } };
+
+    std::cout << v << nl;
+
+    std::nth_element ( v.begin ( ), v.begin ( ) + 4, v.end ( ), [ ] ( const chr & a, const chr & b ) { return a.v < b.v; } );
+
+    std::cout << v << nl;
+
+    return EXIT_SUCCESS;
+}
+
+
+
+int main568 ( ) {
 
     auto p = cgp::initialize ( 2, 32, 1, 2 );
 
