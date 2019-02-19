@@ -624,7 +624,9 @@ Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ )
 // facilitate neutral genetic drift.
 template<typename Real>
 void selectFittest ( std::vector<Chromosome<Real>> & parents_, std::vector<Chromosome<Real>> && candidateChromos_ ) noexcept {
+    assert ( candidateChromos_.size ( ) >= parents_.size ( ) );
     std::stable_sort ( std::begin ( candidateChromos_ ), std::end ( candidateChromos_ ), [ ] ( const Chromosome<Real> & a, const Chromosome<Real> & b ) { return a.fitness < b.fitness; } );
+    candidateChromos_.resize ( parents_.size ( ) );
     parents_ = std::move ( candidateChromos_ );
 }
 

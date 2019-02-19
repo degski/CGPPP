@@ -58,6 +58,7 @@ namespace fs = std::filesystem;
 
 #include <experimental/fixed_capacity_vector> // https://github.com/gnzlbg/static_vector
 
+
 int main ( ) {
 
     auto p = cgp::initialize ( 2, 32, 1, 2 );
@@ -75,7 +76,6 @@ int main ( ) {
     cgp::Data<Float> ds;
 
     ds.loadFromFile ( "../data/", "table.data" );
-
 
     return EXIT_SUCCESS;
 }
