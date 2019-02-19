@@ -158,7 +158,9 @@ struct Chromosome;
 template<typename Real = float>
 void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept;
 template<typename Real>
-Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ );
+Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ ) noexcept;
+template<typename Real>
+void selectFittest ( std::vector<Chromosome<Real>> & parents_, std::vector<Chromosome<Real>> && candidateChromos_ ) noexcept;
 
 
 template<typename Real>
@@ -180,11 +182,11 @@ struct Parameters {
     Real targetFitness;
     int updateFrequency;
     bool shortcutConnections;
-    void ( *mutationType )( Chromosome<Real> & chromo_ );
+    void ( *mutationType ) ( Chromosome<Real> & chromo_ );
     std::string mutationTypeName;
-    Real ( *fitnessFunction )( Chromosome<Real> & chromo_, const Data<Real> & data_ );
+    Real ( *fitnessFunction ) ( Chromosome<Real> & chromo_, const Data<Real> & data_ );
     std::string fitnessFunctionName;
-    //void ( *selectionScheme )( Chromosome<Real> & *parents, Chromosome<Real> & *candidateChromos, int numParents, int numCandidateChromos );
+    void ( *selectionScheme ) ( std::vector<Chromosome<Real>> & parents_, std::vector<Chromosome<Real>> && candidateChromos_ );
     std::string selectionSchemeName;
     //void ( *reproductionScheme )( Chromosome<Real> & *parents, Chromosome<Real> & *children, int numParents, int numChildren );
     std::string reproductionSchemeName;
@@ -211,7 +213,7 @@ struct Parameters {
         mutationTypeName { "probabilisticMutation" },
         fitnessFunction { supervisedLearning },
         fitnessFunctionName { "supervisedLearning" },
- //     selectionScheme { selectFittest },
+        selectionScheme { selectFittest },
         selectionSchemeName { "selectFittest" },
  //     reproductionScheme { mutateRandomParent },
         reproductionSchemeName { "mutateRandomParent" },
@@ -598,17 +600,32 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 }
 
 
-// The default fitness function used by CGP-Library. simply assigns
-// an error of the sum of the absolute differences between the target
-// and actual outputs for all outputs over all samples.
+// The default fitness function used by CGP-Library. simply assigns an
+// error of the sum of the absolute differences between the target and
+// actual outputs for all outputs over all samples.
 template<typename Real>
-Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ ) {
+Real supervisedLearning ( Chromosome<Real> & chromo_, const Data<Real> & data_ ) noexcept {
     Real error = Real { 0 };
     for ( const auto & sample : data_ ) {
         chromo_.execute ( sample.input );
         error = std::inner_product ( std::begin ( chromo_.outputValues ), std::end ( chromo_.outputValues ), std::begin ( sample.output ), error, std::plus<> ( ), [ ] ( const Real a, const Real b ) { return std::abs ( a - b ); } );
      }
     return error;
+}
+
+
+// Selection scheme which selects the fittest members of the population
+// to be the parents.
+//
+// The candidateChromos contains the current children followed by the
+// current parents. This means that using a stable sort to order
+// candidateChromos results in children being selected over parents if
+// their fitnesses are equal. A desirable property in CGPPP to
+// facilitate neutral genetic drift.
+template<typename Real>
+void selectFittest ( std::vector<Chromosome<Real>> & parents_, std::vector<Chromosome<Real>> && candidateChromos_ ) noexcept {
+    std::stable_sort ( std::begin ( candidateChromos_ ), std::end ( candidateChromos_ ), [ ] ( const Chromosome<Real> & a, const Chromosome<Real> & b ) { return a.fitness < b.fitness; } );
+    parents_ = std::move ( candidateChromos_ );
 }
 
 
@@ -1277,29 +1294,6 @@ DLL_EXPORT int getNumChromosomeActiveConnections ( struct chromosome *chromo ) {
 */
 DLL_EXPORT int getChromosomeGenerations ( struct chromosome *chromo ) {
     return chromo->generation;
-}
-
-
-
-/*
-    Sorts the given array of chromosomes by fitness, lowest to highest
-    uses insertion sort (quickish and stable)
-*/
-static void sortChromosomeArray ( struct chromosome **chromoArray, int numChromos ) {
-
-    int i, j;
-    struct chromosome *chromoTmp;
-
-    for ( i = 0; i < numChromos; i++ ) {
-        for ( j = i; j < numChromos; j++ ) {
-
-            if ( chromoArray [ i ]->fitness > chromoArray [ j ]->fitness ) {
-                chromoTmp = chromoArray [ i ];
-                chromoArray [ i ] = chromoArray [ j ];
-                chromoArray [ j ] = chromoTmp;
-            }
-        }
-    }
 }
 
 
@@ -2176,28 +2170,6 @@ static void mutateRandomParent ( struct parameters *params, struct chromosome **
 
         /* mutate newly cloned child */
         mutateChromosome ( params, children [ i ] );
-    }
-}
-
-
-/*
-    Selection scheme which selects the fittest members of the population
-    to be the parents.
-
-    The candidateChromos contains the current children followed by the
-    current parents. This means that using a stable sort to order
-    candidateChromos results in children being selected over parents if
-    their fitnesses are equal. A desirable property in CGP to facilitate
-    neutral genetic drift.
-*/
-static void selectFittest ( struct parameters *params, struct chromosome **parents, struct chromosome **candidateChromos, int numParents, int numCandidateChromos ) {
-
-    int i;
-
-    sortChromosomeArray ( candidateChromos, numCandidateChromos );
-
-    for ( i = 0; i < numParents; i++ ) {
-        copyChromosome ( parents [ i ], candidateChromos [ i ] );
     }
 }
 

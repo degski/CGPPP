@@ -414,9 +414,8 @@ struct FunctionSet {
 
     static constexpr void printBuiltinFunctionSet ( ) noexcept {
         std::cout << "Built-in Function Set:";
-        for ( const auto & name : functionSet ) {
+        for ( const auto & name : functionSet )
             std::cout << ' ' << name.first.data ( );
-        }
         std::cout << " (" << functionSet.size ( ) << ')' << nl;
     }
 
