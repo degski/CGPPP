@@ -216,6 +216,8 @@ struct Parameters {
 
     int numThreads;
 
+    static thread_local sax::Rng prng;
+
     Parameters ( ) noexcept :
 
         mu { 1 },
@@ -242,7 +244,7 @@ struct Parameters {
         numThreads { 1 } {
     }
 
-    void setDimensions ( const int numInputs_, const int numNodes_, const int numOutputs_, const int arity_ ) noexcept {
+    [[ maybe_unused ]] Parameters & setDimensions ( const int numInputs_, const int numNodes_, const int numOutputs_, const int arity_ ) noexcept {
         numInputs = numInputs_;
         numNodes = numNodes_;
         numOutputs = numOutputs_;
@@ -252,6 +254,7 @@ struct Parameters {
             print ( );
             std::abort ( );
         }
+        return * this;
     }
 
     // Validate the current parameters.
@@ -287,7 +290,7 @@ struct Parameters {
     }
 
     [[ nodiscard ]] bool mutate ( ) const noexcept {
-        return mutationDistribution ( sax::prng );
+        return mutationDistribution ( FunctionSet<Real>::prng );
     }
 
     [[ nodiscard ]] int getRandomFunction ( ) const noexcept {
@@ -295,7 +298,7 @@ struct Parameters {
     }
 
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( sax::prng ) ?
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( FunctionSet<Real>::prng ) ?
             Parameters::randInt ( numNodes - nodePosition_ ) + nodePosition_ + numInputs :
             Parameters::randInt ( numInputs + nodePosition_ );
     }
@@ -325,11 +328,11 @@ struct Parameters {
     [[ nodiscard ]] static int randInt ( const int n_ ) noexcept {
         if ( not ( n_ ) )
             return 0;
-        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( sax::prng );
+        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( FunctionSet<Real>::prng );
     }
 
-    void seedRng ( const std::uint64_t s_ = 0u ) noexcept {
-        sax::prng.seed ( s_ ? s_ : sax::os_seed ( ) );
+    static void seedRng ( const std::uint64_t s_ = 0u ) noexcept {
+        FunctionSet<Real>::seedRng ( s_ );
     }
 
     // Output.
@@ -359,15 +362,18 @@ struct Parameters {
     }
 };
 
-inline namespace parameters_singleton_detail {
-sax::singleton<Parameters<Float>> parameters_singleton;
-auto params = [ ] { return parameters_singleton.instance ( ); } ( );
+
+namespace detail {
+Parameters<Float> & params ( ) noexcept {
+    static Parameters<Float> parameters;
+    return parameters;
+}
 }
 
+auto params = detail::params ( );
 
 Parameters<Float> & initialize ( const int numInputs_, const int numNodes_, const int numOutputs_, const int arity_ ) noexcept {
-    parameters_singleton_detail::params.setDimensions ( numInputs_, numNodes_, numOutputs_, arity_ );
-    return parameters_singleton_detail::params;
+    return params.setDimensions ( numInputs_, numNodes_, numOutputs_, arity_ );
 }
 
 
@@ -692,7 +698,8 @@ void selectFittest ( chromos_iterator<Real> parents_begin_, chromos_iterator<Rea
 // Mutate Random parent reproduction method.
 template<typename Real>
 void mutateRandomParent ( ChromosomePtrVec<Real> & children_, const ChromosomePtrVec<Real> & parents_ ) noexcept {
-    std::generate_n ( sax::back_emplacer ( children_ ), params.lambda, [ & parents_ ] { return parents_ [ params.randInt ( parents_.size ( ) ) ]->mutate ( ); } );
+    children_.resize ( params.lambda );
+    std::for_each ( std::execution::par_unseq, std::begin ( children_ ), std::end ( children_ ), [ & parents_ ] ( ChromosomePtr<Real> & child ) noexcept { child = parents_ [ Parameters<Real>::randInt ( parents_.size ( ) ) ]->mutate ( ); } );
 }
 
 
@@ -730,9 +737,8 @@ ChromosomePtr<Real> runCGPPP ( const int numGens_ ) {
 
         // Check termination conditions.
         if ( bestChromo->fitness <= params.targetFitness ) {
-            if ( params.updateFrequency != 0 ) {
+            if ( params.updateFrequency != 0 )
                 std::printf ( "%d\t%f - Solution Found\n", gen, bestChromo->fitness );
-            }
             break;
         }
 

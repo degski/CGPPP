@@ -65,6 +65,261 @@ namespace cgp {
 namespace function {
 
 // Node function add. Returns the sum of all the inputs.
+template<typename Real> [[ nodiscard ]] Real f_add ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function sub. Returns the first input minus all remaining inputs_.
+template<typename Real> [[ nodiscard ]] Real f_sub ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function mul. Returns the multiplication of all the inputs_.
+template<typename Real> [[ nodiscard ]] Real f_mul ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function div. Returns the first input divided by the second input divided by
+// the third input etc.
+template<typename Real> [[ nodiscard ]] Real f_divide ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function idiv.Returns the first input (cast to int) divided by the second
+// input (cast to int). This function allows for integer arithmatic.
+template<typename Real> [[ nodiscard ]] Real f_idiv ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function irem. Returns the remainder of the first input (cast to int) divided
+// by the second input (cast to int). This function allows for integer arithmatic.
+template<typename Real> [[ nodiscard ]] Real f_irem ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function abs. Returns the negation of the first input. This is useful if one
+// doesn't want to use the mathematically crazy sub function, then negate can be
+// applied to add.
+template<typename Real> [[ nodiscard ]] Real f_negate ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function abs. Returns the absolute of the first input.
+template<typename Real> [[ nodiscard ]] Real f_absolute ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function sqrt. Returns the square root of the first input.
+template<typename Real> [[ nodiscard ]] Real f_squareRoot ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function sqr. Returns the square of the first input.
+template<typename Real> [[ nodiscard ]] Real f_square ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function cub. Returns the cube of the first input.
+template<typename Real> [[ nodiscard ]] Real f_cube ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function power. Returns the first output to the power of the second.
+template<typename Real> [[ nodiscard ]] Real f_power ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function exp. Returns the exponential of the first input.
+template<typename Real> [[ nodiscard ]] Real f_exponential ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function exp2. Returns the 2 ^ x of the first input.
+template<typename Real> [[ nodiscard ]] Real f_exponential2 ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function log. Returns the natural logarith of the first input.
+template<typename Real> [[ nodiscard ]] Real f_logarithm ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function log2. Returns the  log base 2 of the first input.
+template<typename Real> [[ nodiscard ]] Real f_logarithm2 ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function sin. Returns the sine of the first input.
+template<typename Real> [[ nodiscard ]] Real f_sin ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function cos. Returns the cosine of the first input.
+template<typename Real> [[ nodiscard ]] Real f_cos ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function tan. Returns the tangent of the first input.
+template<typename Real> [[ nodiscard ]] Real f_tan ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function asin. Returns the arc sine of the first input.
+template<typename Real> [[ nodiscard ]] Real f_asin ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function acos. Returns the arc cosine of the first input.
+template<typename Real> [[ nodiscard ]] Real f_acos ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function atan. Returns the arc tangent of the first input.
+template<typename Real> [[ nodiscard ]] Real f_atan ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function 0. Always returns 0, etc below.
+template<typename Real> [[ nodiscard ]] Real f_0 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_1 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_2 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_3 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_4 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_5 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_6 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_7 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_8 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_9 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_10 ( const stl::vector<Real> & inputs_ ) noexcept;
+template<typename Real> [[ nodiscard ]] Real f_16 ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function e. Always returns Euler's number.
+template<typename Real> [[ nodiscard ]] Real f_Euler ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function pi. Always returns Pi.
+template<typename Real> [[ nodiscard ]] Real f_Pi ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function rand. Returns a random number [ -1, 1 ].
+template<typename Real> [[ nodiscard ]] Real f_randFloat ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function bern. Returns a random -1 or 1.
+template<typename Real> [[ nodiscard ]] Real f_randBernoulli ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function and. Return logical AND, returns 1 if all inputs_ are 1 else, 1.
+template<typename Real> [[ nodiscard ]] Real f_and ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function nand. Returns logical NAND, returns 0 if all inputs_ are 1 else, 1.
+template<typename Real> [[ nodiscard ]] Real f_nand ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function or. Returns logical OR, returns 0 if all inputs_ are 0 else, 1.
+template<typename Real> [[ nodiscard ]] Real f_or ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function nor. Returns logical NOR, returns 1 if all inputs_ are 0 else, 0.
+template<typename Real> [[ nodiscard ]] Real f_nor ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function xor. Returns logical XOR, returns 1 iff one of the inputs_ is 1
+// else, 0. a.k.a. 'one hot'.
+template<typename Real> [[ nodiscard ]] Real f_xor ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function xnor. Returns logical XNOR, returns 0 iff one of the inputs_ is 1
+// else, 1.
+template<typename Real> [[ nodiscard ]] Real f_xnor ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function not. Returns logical NOT, returns 1 if first input is 0, else 1.
+template<typename Real> [[ nodiscard ]] Real f_not ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function wire. Simply acts as a wire returning the first input.
+template<typename Real> [[ nodiscard ]] Real f_wire ( const stl::vector<Real> & inputs_ ) noexcept;
+
+} // namespace function
+
+
+template<typename Real>
+using FunctionPointer = Real ( * ) ( const stl::vector<Real> & inputs_ );
+
+
+template<typename Real>
+struct FunctionSet {
+
+    using Pointer = FunctionPointer<Real>;
+
+    private:
+
+    struct FunctionData {
+        Pointer function;
+        int maxNumInputs;
+    };
+
+    public:
+
+    stl::vector<frozen::string> functionNames;
+    stl::vector<Pointer> function;
+    stl::vector<int> maxNumInputs;
+
+    int numFunctions = 0;
+
+    friend class cereal::access;
+
+    template<typename Archive>
+    void save ( Archive & archive_ ) const {
+        archive_ ( numFunctions );
+        for ( const auto & name : functionNames )
+            archive_ ( std::string { name.data ( ), name.size ( ) } );
+    }
+
+    template<typename Archive>
+    void load ( Archive & archive_ ) {
+        archive_ ( numFunctions );
+        std::string name;
+        for ( int i = 0; i < numFunctions; ++i ) {
+            name.clear ( );
+            archive_ ( name );
+            auto [ f, n ] { functionSet.at ( functionNames.emplace_back ( name.data ( ), name.size ( ) ) ) };
+            function.push_back ( f );
+            maxNumInputs.push_back ( n );
+        }
+    }
+
+    template<typename ... Args>
+    void addNodeFunction ( Args && ... args_ ) {
+        ( addPresetNodeFunction ( args_ ), ... );
+    }
+
+    void addPresetNodeFunction ( frozen::string && functionName_ ) {
+        auto [ f, n ] { functionSet.at ( functionNames.emplace_back ( std::move ( functionName_ ) ) ) };
+        function.push_back ( f );
+        maxNumInputs.push_back ( n );
+        ++numFunctions;
+    }
+
+    template<typename PointerType>
+    void addCustomNodeFunction ( const frozen::string & functionName_, PointerType function_, int maxNumInputs_ ) {
+        functionNames.push_back ( functionName_ );
+        function.emplace_back ( function_ );
+        maxNumInputs.push_back ( maxNumInputs_ );
+        ++numFunctions;
+    }
+
+    void clear ( ) noexcept {
+        functionNames.clear ( );
+        function.clear ( );
+        maxNumInputs.clear ( );
+        numFunctions = 0;
+    }
+
+    void printActiveFunctionSet ( ) const noexcept {
+        std::cout << "Active Function Set:";
+        for ( const auto & name : functionNames )
+            std::cout << ' ' << name.data ( );
+        std::cout << " (" << numFunctions << ')' << nl;
+    }
+
+    static constexpr void printBuiltinFunctionSet ( ) noexcept {
+        std::cout << "Built-in Function Set:";
+        for ( const auto & name : functionSet )
+            std::cout << ' ' << name.first.data ( );
+        std::cout << " (" << functionSet.size ( ) << ')' << nl;
+    }
+
+    [[ nodiscard ]] static constexpr std::size_t sizeBuiltinFunctionSet ( ) noexcept {
+        return functionSet.size ( );
+    }
+
+    static thread_local sax::Rng prng;
+
+    static void seedRng ( const std::uint64_t s_ = 0u ) noexcept {
+        FunctionSet::prng.seed ( s_ ? s_ : sax::os_seed ( ) );
+    }
+
+    private:
+
+    static constexpr frozen::unordered_map<frozen::string, FunctionData, 46> functionSet {
+        { "add", { function::f_add, -1 } },
+        { "sub", { function::f_sub, 2 } },
+        { "mul", { function::f_mul, -1 } },
+        { "div", { function::f_divide, 2 } },
+        { "idiv", { function::f_idiv, 2 } },
+        { "irem", { function::f_irem, 2 } },
+        { "neg", { function::f_negate, 1 } },
+        { "abs", { function::f_absolute, 1 } },
+        { "sqrt", { function::f_squareRoot, 1 } },
+        { "sqr", { function::f_square, 1 } },
+        { "cube", { function::f_cube, 1 } },
+        { "pow", { function::f_power, 2 } },
+        { "exp", { function::f_exponential, 1 } },
+        { "exp2", { function::f_exponential2, 1 } },
+        { "log", { function::f_logarithm, 1 } },
+        { "log2", { function::f_logarithm2, 1 } },
+        { "sin", { function::f_sin, 1 } },
+        { "cos", { function::f_cos, 1 } },
+        { "tan", { function::f_tan, 1 } },
+        { "asin", { function::f_asin, 1 } },
+        { "acos", { function::f_acos, 1 } },
+        { "atan", { function::f_atan, 1 } },
+        { "rand", { function::f_randFloat, 0 } },
+        { "bern", { function::f_randBernoulli, 0 } },
+        { "0", { function::f_0, 0 } },
+        { "1", { function::f_1, 0 } },
+        { "2", { function::f_2, 0 } },
+        { "3", { function::f_3, 0 } },
+        { "4", { function::f_4, 0 } },
+        { "5", { function::f_5, 0 } },
+        { "6", { function::f_6, 0 } },
+        { "7", { function::f_7, 0 } },
+        { "8", { function::f_8, 0 } },
+        { "9", { function::f_9, 0 } },
+        { "10", { function::f_10, 0 } },
+        { "16", { function::f_16, 0 } },
+        { "e", { function::f_Euler, 0 } },
+        { "pi", { function::f_Pi, 0 } },
+        { "and", { function::f_and, -1 } },
+        { "nand", { function::f_nand, -1 } },
+        { "or", { function::f_or, -1 } },
+        { "nor", { function::f_nor, -1 } },
+        { "xor", { function::f_xor, -1 } },
+        { "xnor", { function::f_xnor, -1 } },
+        { "not", { function::f_not, 1 } },
+        { "wire", { function::f_wire, 1 } }
+    };
+};
+
+template<typename Real>
+thread_local sax::Rng FunctionSet<Real>::prng ( sax::os_seed ( ) );
+
+
+namespace detail {
+sax::singleton<FunctionSet<Float>> singletonFunctionSet;
+}
+
+
+auto functionSet = [ ] { return detail::singletonFunctionSet.instance ( ); } ( );
+
+
+namespace function {
+
+// Node function add. Returns the sum of all the inputs.
 template<typename Real> [[ nodiscard ]] Real f_add ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::accumulate ( std::begin ( inputs_ ), std::end ( inputs_ ), Real { 0 }, std::plus<Real> ( ) );
 }
@@ -92,16 +347,16 @@ template<typename Real> [[ nodiscard ]] Real f_divide ( const stl::vector<Real> 
 // Node function idiv.Returns the first input (cast to int) divided by the second
 // input (cast to int). This function allows for integer arithmatic.
 template<typename Real> [[ nodiscard ]] Real f_idiv ( const stl::vector<Real> & inputs_ ) noexcept {
-    if ( 0 != static_cast<int> ( inputs_ [ 1 ] ) )
-        return static_cast<Real> ( static_cast<int> ( inputs_ [ 0 ] ) / static_cast<int> ( inputs_ [ 1 ] ) );
+    if ( 0 != static_cast< int > ( inputs_ [ 1 ] ) )
+        return static_cast< Real > ( static_cast< int > ( inputs_ [ 0 ] ) / static_cast< int > ( inputs_ [ 1 ] ) );
     return Real { 0 };
 }
 
 // Node function irem. Returns the remainder of the first input (cast to int) divided
 // by the second input (cast to int). This function allows for integer arithmatic.
 template<typename Real> [[ nodiscard ]] Real f_irem ( const stl::vector<Real> & inputs_ ) noexcept {
-    if ( 0 != static_cast<int> ( inputs_ [ 1 ] ) )
-        return static_cast<Real> ( static_cast<int> ( inputs_ [ 0 ] ) % static_cast<int> ( inputs_ [ 1 ] ) );
+    if ( 0 != static_cast< int > ( inputs_ [ 1 ] ) )
+        return static_cast< Real > ( static_cast< int > ( inputs_ [ 0 ] ) % static_cast< int > ( inputs_ [ 1 ] ) );
     return Real { 0 };
 }
 
@@ -247,12 +502,12 @@ template<typename Real> [[ nodiscard ]] Real f_Pi ( const stl::vector<Real> & in
 
 // Node function rand. Returns a random number [ -1, 1 ].
 template<typename Real> [[ nodiscard ]] Real f_randFloat ( const stl::vector<Real> & inputs_ ) noexcept {
-    return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( sax::prng );
+    return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( FunctionSet<Real>::prng );
 }
 
 // Node function bern. Returns a random -1 or 1.
 template<typename Real> [[ nodiscard ]] Real f_randBernoulli ( const stl::vector<Real> & inputs_ ) noexcept {
-    return static_cast<Real> ( std::bernoulli_distribution ( ) ( sax::prng ) * 2 - 1 );
+    return static_cast< Real > ( std::bernoulli_distribution ( ) ( FunctionSet<Real>::prng ) * 2 - 1 );
 }
 
 // Node function and. Return logical AND, returns 1 if all inputs_ are 1 else, 1.
@@ -313,8 +568,8 @@ template<typename Real> [[ nodiscard ]] Real f_xnor ( const stl::vector<Real> & 
             ++numOnes;
         if ( numOnes > 1 )
             return Real { 1 };
-        }
-        return Real { 0 };
+    }
+    return Real { 0 };
 }
 
 // Node function not. Returns logical NOT, returns 1 if first input is 0, else 1.
@@ -328,157 +583,6 @@ template<typename Real> [[ nodiscard ]] Real f_wire ( const stl::vector<Real> & 
 }
 
 } // namespace function
-
-
-template<typename Real>
-using FunctionPointer = Real ( * ) ( const stl::vector<Real> & inputs_ );
-
-
-template<typename Real>
-struct FunctionSet {
-
-    using Pointer = FunctionPointer<Real>;
-
-    private:
-
-    struct FunctionData {
-        Pointer function;
-        int maxNumInputs;
-    };
-
-    public:
-
-    stl::vector<frozen::string> functionNames;
-    stl::vector<Pointer> function;
-    stl::vector<int> maxNumInputs;
-
-    int numFunctions = 0;
-
-    friend class cereal::access;
-
-    template<typename Archive>
-    void save ( Archive & archive_ ) const {
-        archive_ ( numFunctions );
-        for ( const auto & name : functionNames )
-            archive_ ( std::string { name.data ( ), name.size ( ) } );
-    }
-
-    template<typename Archive>
-    void load ( Archive & archive_ ) {
-        archive_ ( numFunctions );
-        std::string name;
-        for ( int i = 0; i < numFunctions; ++i ) {
-            name.clear ( );
-            archive_ ( name );
-            auto [ f, n ] { functionSet.at ( functionNames.emplace_back ( name.data ( ), name.size ( ) ) ) };
-            function.push_back ( f );
-            maxNumInputs.push_back ( n );
-        }
-    }
-
-    template<typename ... Args>
-    void addNodeFunction ( Args && ... args_ ) {
-        ( addPresetNodeFunction ( args_ ), ... );
-    }
-
-    void addPresetNodeFunction ( frozen::string && functionName_ ) {
-        auto [ f, n ] { functionSet.at ( functionNames.emplace_back ( std::move ( functionName_ ) ) ) };
-        function.push_back ( f );
-        maxNumInputs.push_back ( n );
-        ++numFunctions;
-    }
-
-    template<typename PointerType>
-    void addCustomNodeFunction ( const frozen::string & functionName_, PointerType function_, int maxNumInputs_ ) {
-        functionNames.push_back ( functionName_ );
-        function.emplace_back ( function_ );
-        maxNumInputs.push_back ( maxNumInputs_ );
-        ++numFunctions;
-    }
-
-    void clear ( ) noexcept {
-        functionNames.clear ( );
-        function.clear ( );
-        maxNumInputs.clear ( );
-        numFunctions = 0;
-    }
-
-    void printActiveFunctionSet ( ) const noexcept {
-        std::cout << "Active Function Set:";
-        for ( const auto & name : functionNames )
-            std::cout << ' ' << name.data ( );
-        std::cout << " (" << numFunctions << ')' << nl;
-    }
-
-    static constexpr void printBuiltinFunctionSet ( ) noexcept {
-        std::cout << "Built-in Function Set:";
-        for ( const auto & name : functionSet )
-            std::cout << ' ' << name.first.data ( );
-        std::cout << " (" << functionSet.size ( ) << ')' << nl;
-    }
-
-    [[ nodiscard ]] static constexpr std::size_t sizeBuiltinFunctionSet ( ) noexcept {
-        return functionSet.size ( );
-    }
-
-    private:
-
-    static constexpr frozen::unordered_map<frozen::string, FunctionData, 46> functionSet {
-        { "add", { function::f_add, -1 } },
-        { "sub", { function::f_sub, 2 } },
-        { "mul", { function::f_mul, -1 } },
-        { "div", { function::f_divide, 2 } },
-        { "idiv", { function::f_idiv, 2 } },
-        { "irem", { function::f_irem, 2 } },
-        { "neg", { function::f_negate, 1 } },
-        { "abs", { function::f_absolute, 1 } },
-        { "sqrt", { function::f_squareRoot, 1 } },
-        { "sqr", { function::f_square, 1 } },
-        { "cube", { function::f_cube, 1 } },
-        { "pow", { function::f_power, 2 } },
-        { "exp", { function::f_exponential, 1 } },
-        { "exp2", { function::f_exponential2, 1 } },
-        { "log", { function::f_logarithm, 1 } },
-        { "log2", { function::f_logarithm2, 1 } },
-        { "sin", { function::f_sin, 1 } },
-        { "cos", { function::f_cos, 1 } },
-        { "tan", { function::f_tan, 1 } },
-        { "asin", { function::f_asin, 1 } },
-        { "acos", { function::f_acos, 1 } },
-        { "atan", { function::f_atan, 1 } },
-        { "rand", { function::f_randFloat, 0 } },
-        { "bern", { function::f_randBernoulli, 0 } },
-        { "0", { function::f_0, 0 } },
-        { "1", { function::f_1, 0 } },
-        { "2", { function::f_2, 0 } },
-        { "3", { function::f_3, 0 } },
-        { "4", { function::f_4, 0 } },
-        { "5", { function::f_5, 0 } },
-        { "6", { function::f_6, 0 } },
-        { "7", { function::f_7, 0 } },
-        { "8", { function::f_8, 0 } },
-        { "9", { function::f_9, 0 } },
-        { "10", { function::f_10, 0 } },
-        { "16", { function::f_16, 0 } },
-        { "e", { function::f_Euler, 0 } },
-        { "pi", { function::f_Pi, 0 } },
-        { "and", { function::f_and, -1 } },
-        { "nand", { function::f_nand, -1 } },
-        { "or", { function::f_or, -1 } },
-        { "nor", { function::f_nor, -1 } },
-        { "xor", { function::f_xor, -1 } },
-        { "xnor", { function::f_xnor, -1 } },
-        { "not", { function::f_not, 1 } },
-        { "wire", { function::f_wire, 1 } }
-    };
-};
-
-namespace detail {
-sax::singleton<FunctionSet<Float>> singletonFunctionSet;
-}
-
-
-auto functionSet = [ ] { return detail::singletonFunctionSet.instance ( ); } ( );
 
 
 } // namespace cgp
