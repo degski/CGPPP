@@ -61,7 +61,13 @@ namespace fs = std::filesystem;
 struct chr {
 
     int v;
-    char n;
+    std::string n;
+
+    chr ( const chr & ) = default;
+    chr ( chr && ) = default;
+
+    chr & operator = ( chr && ) = default;
+    chr & operator = ( const chr & ) = default;
 };
 
 template<typename Stream>
@@ -70,17 +76,16 @@ Stream & operator << ( Stream & out_, const chr & v_ ) noexcept {
     return out_;
 }
 
-
-
 int main ( ) {
 
-    std::vector<chr> v { { 5, 'c' }, { 9, 'c' }, { 2, 'c' }, { 7, 'c' }, { 5, 'p' }, { 1, 'p' }, { 1, 'c' } };
+    std::vector<int> v { 1,6,7 };
+    std::vector<int> w { 8,9,0 };
 
     std::cout << v << nl;
 
-    std::nth_element ( v.begin ( ), v.begin ( ) + 4, v.end ( ), [ ] ( const chr & a, const chr & b ) { return a.v < b.v; } );
+    std::move ( std::begin ( v ), std::end ( v ), sax::back_emplacer ( w ) );
 
-    std::cout << v << nl;
+    std::cout << w << nl;
 
     return EXIT_SUCCESS;
 }

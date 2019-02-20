@@ -65,24 +65,24 @@ namespace cgp {
 namespace function {
 
 // Node function add. Returns the sum of all the inputs.
-template<typename Real> Real f_add ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_add ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::accumulate ( std::begin ( inputs_ ), std::end ( inputs_ ), Real { 0 }, std::plus<Real> ( ) );
 }
 
 // Node function sub. Returns the first input minus all remaining inputs_.
-template<typename Real> Real f_sub ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_sub ( const stl::vector<Real> & inputs_ ) noexcept {
     return inputs_ [ 0 ] - inputs_ [ 1 ];
     // return std::accumulate ( std::next ( std::begin ( inputs_ ) ), std::end ( inputs_ ), inputs_ [ 0 ], std::minus<Real> ( ) );
 }
 
 // Node function mul. Returns the multiplication of all the inputs_.
-template<typename Real> Real f_mul ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_mul ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::accumulate ( std::begin ( inputs_ ), std::end ( inputs_ ), Real { 1 }, std::multiplies<Real> ( ) );
 }
 
 // Node function div. Returns the first input divided by the second input divided by
 // the third input etc.
-template<typename Real> Real f_divide ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_divide ( const stl::vector<Real> & inputs_ ) noexcept {
     if ( inputs_ [ 1 ] )
         return inputs_ [ 0 ] / inputs_ [ 1 ];
     return Real { 0 };
@@ -91,7 +91,7 @@ template<typename Real> Real f_divide ( const stl::vector<Real> & inputs_ ) noex
 
 // Node function idiv.Returns the first input (cast to int) divided by the second
 // input (cast to int). This function allows for integer arithmatic.
-template<typename Real> Real f_idiv ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_idiv ( const stl::vector<Real> & inputs_ ) noexcept {
     if ( 0 != static_cast<int> ( inputs_ [ 1 ] ) )
         return static_cast<Real> ( static_cast<int> ( inputs_ [ 0 ] ) / static_cast<int> ( inputs_ [ 1 ] ) );
     return Real { 0 };
@@ -99,7 +99,7 @@ template<typename Real> Real f_idiv ( const stl::vector<Real> & inputs_ ) noexce
 
 // Node function irem. Returns the remainder of the first input (cast to int) divided
 // by the second input (cast to int). This function allows for integer arithmatic.
-template<typename Real> Real f_irem ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_irem ( const stl::vector<Real> & inputs_ ) noexcept {
     if ( 0 != static_cast<int> ( inputs_ [ 1 ] ) )
         return static_cast<Real> ( static_cast<int> ( inputs_ [ 0 ] ) % static_cast<int> ( inputs_ [ 1 ] ) );
     return Real { 0 };
@@ -108,155 +108,155 @@ template<typename Real> Real f_irem ( const stl::vector<Real> & inputs_ ) noexce
 // Node function abs. Returns the negation of the first input. This is useful if one
 // doesn't want to use the mathematically crazy sub function, then negate can be
 // applied to add.
-template<typename Real> Real f_negate ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_negate ( const stl::vector<Real> & inputs_ ) noexcept {
     return -inputs_ [ 0 ];
 }
 
 // Node function abs. Returns the absolute of the first input.
-template<typename Real> Real f_absolute ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_absolute ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::abs ( inputs_ [ 0 ] );
 }
 
 // Node function sqrt. Returns the square root of the first input.
-template<typename Real> Real f_squareRoot ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_squareRoot ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::sqrt ( inputs_ [ 0 ] );
 }
 
 // Node function sqr. Returns the square of the first input.
-template<typename Real> Real f_square ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_square ( const stl::vector<Real> & inputs_ ) noexcept {
     return inputs_ [ 0 ] * inputs_ [ 0 ];
 }
 
 // Node function cub. Returns the cube of the first input.
-template<typename Real> Real f_cube ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_cube ( const stl::vector<Real> & inputs_ ) noexcept {
     return inputs_ [ 0 ] * inputs_ [ 0 ] * inputs_ [ 0 ];
 }
 
 // Node function power. Returns the first output to the power of the second.
-template<typename Real> Real f_power ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_power ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::pow ( inputs_ [ 0 ], inputs_ [ 1 ] );
 }
 
 // Node function exp. Returns the exponential of the first input.
-template<typename Real> Real f_exponential ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_exponential ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::exp ( inputs_ [ 0 ] );
 }
 
 // Node function exp2. Returns the 2 ^ x of the first input.
-template<typename Real> Real f_exponential2 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_exponential2 ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::exp2 ( inputs_ [ 0 ] );
 }
 
 // Node function log. Returns the natural logarith of the first input.
-template<typename Real> Real f_logarithm ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_logarithm ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::log ( inputs_ [ 0 ] );
 }
 
 // Node function log2. Returns the  log base 2 of the first input.
-template<typename Real> Real f_logarithm2 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_logarithm2 ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::log2 ( inputs_ [ 0 ] );
 }
 
 // Node function sin. Returns the sine of the first input.
-template<typename Real> Real f_sin ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_sin ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::sin ( inputs_ [ 0 ] );
 }
 
 // Node function cos. Returns the cosine of the first input.
-template<typename Real> Real f_cos ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_cos ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::cos ( inputs_ [ 0 ] );
 }
 
 // Node function tan. Returns the tangent of the first input.
-template<typename Real> Real f_tan ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_tan ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::tan ( inputs_ [ 0 ] );
 }
 
 // Node function asin. Returns the arc sine of the first input.
-template<typename Real> Real f_asin ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_asin ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::asin ( inputs_ [ 0 ] );
 }
 
 // Node function acos. Returns the arc cosine of the first input.
-template<typename Real> Real f_acos ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_acos ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::acos ( inputs_ [ 0 ] );
 }
 
 // Node function atan. Returns the arc tangent of the first input.
-template<typename Real> Real f_atan ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_atan ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::atan ( inputs_ [ 0 ] );
 }
 
 // Node function 0. Always returns 0, etc below.
-template<typename Real> Real f_0 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_0 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 0.0;
 }
 
-template<typename Real> Real f_1 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_1 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 1.0;
 }
 
-template<typename Real> Real f_2 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_2 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 2.0;
 }
 
-template<typename Real> Real f_3 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_3 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 3.0;
 }
 
-template<typename Real> Real f_4 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_4 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 4.0;
 }
 
-template<typename Real> Real f_5 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_5 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 5.0;
 }
 
-template<typename Real> Real f_6 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_6 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 6.0;
 }
 
-template<typename Real> Real f_7 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_7 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 7.0;
 }
 
-template<typename Real> Real f_8 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_8 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 8.0;
 }
-template<typename Real> Real f_9 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_9 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 9.0;
 }
 
-template<typename Real> Real f_10 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_10 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 10.0;
 }
 
-template<typename Real> Real f_16 ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_16 ( const stl::vector<Real> & inputs_ ) noexcept {
     return 16.0;
 }
 
 // Node function e. Always returns Euler's number.
-template<typename Real> Real f_Euler ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_Euler ( const stl::vector<Real> & inputs_ ) noexcept {
     return 2.718'281'828'459'045'091;
 }
 
 // Node function pi. Always returns Pi.
-template<typename Real> Real f_Pi ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_Pi ( const stl::vector<Real> & inputs_ ) noexcept {
     return 3.141'592'653'589'793'116;
 }
 
 // Node function rand. Returns a random number [ -1, 1 ].
-template<typename Real> Real f_randFloat ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_randFloat ( const stl::vector<Real> & inputs_ ) noexcept {
     return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( sax::prng );
 }
 
 // Node function bern. Returns a random -1 or 1.
-template<typename Real> Real f_randBernoulli ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_randBernoulli ( const stl::vector<Real> & inputs_ ) noexcept {
     return static_cast<Real> ( std::bernoulli_distribution ( ) ( sax::prng ) * 2 - 1 );
 }
 
 // Node function and. Return logical AND, returns 1 if all inputs_ are 1 else, 1.
-template<typename Real> Real f_and ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_and ( const stl::vector<Real> & inputs_ ) noexcept {
     for ( const auto i : inputs_ ) {
         if ( not ( i ) )
             return Real { 0 };
@@ -265,7 +265,7 @@ template<typename Real> Real f_and ( const stl::vector<Real> & inputs_ ) noexcep
 }
 
 // Node function nand. Returns logical NAND, returns 0 if all inputs_ are 1 else, 1.
-template<typename Real> Real f_nand ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_nand ( const stl::vector<Real> & inputs_ ) noexcept {
     for ( const auto i : inputs_ ) {
         if ( not ( i ) )
             return Real { 1 };
@@ -274,7 +274,7 @@ template<typename Real> Real f_nand ( const stl::vector<Real> & inputs_ ) noexce
 }
 
 // Node function or. Returns logical OR, returns 0 if all inputs_ are 0 else, 1.
-template<typename Real> Real f_or ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_or ( const stl::vector<Real> & inputs_ ) noexcept {
     for ( const auto i : inputs_ ) {
         if ( i )
             return Real { 1 };
@@ -283,7 +283,7 @@ template<typename Real> Real f_or ( const stl::vector<Real> & inputs_ ) noexcept
 }
 
 // Node function nor. Returns logical NOR, returns 1 if all inputs_ are 0 else, 0.
-template<typename Real> Real f_nor ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_nor ( const stl::vector<Real> & inputs_ ) noexcept {
     for ( const auto i : inputs_ ) {
         if ( i )
             return Real { 0 };
@@ -293,7 +293,7 @@ template<typename Real> Real f_nor ( const stl::vector<Real> & inputs_ ) noexcep
 
 // Node function xor. Returns logical XOR, returns 1 iff one of the inputs_ is 1
 // else, 0. a.k.a. 'one hot'.
-template<typename Real> Real f_xor ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_xor ( const stl::vector<Real> & inputs_ ) noexcept {
     int numOnes = 0;
     for ( const auto i : inputs_ ) {
         if ( i )
@@ -306,7 +306,7 @@ template<typename Real> Real f_xor ( const stl::vector<Real> & inputs_ ) noexcep
 
 // Node function xnor. Returns logical XNOR, returns 0 iff one of the inputs_ is 1
 // else, 1.
-template<typename Real> Real f_xnor ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_xnor ( const stl::vector<Real> & inputs_ ) noexcept {
     int numOnes = 0;
     for ( const auto i : inputs_ ) {
         if ( i )
@@ -318,12 +318,12 @@ template<typename Real> Real f_xnor ( const stl::vector<Real> & inputs_ ) noexce
 }
 
 // Node function not. Returns logical NOT, returns 1 if first input is 0, else 1.
-template<typename Real> Real f_not ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_not ( const stl::vector<Real> & inputs_ ) noexcept {
     return inputs_ [ 0 ] == Real { 0 };
 }
 
 // Node function wire. Simply acts as a wire returning the first input.
-template<typename Real> Real f_wire ( const stl::vector<Real> & inputs_ ) noexcept {
+template<typename Real> [[ nodiscard ]] Real f_wire ( const stl::vector<Real> & inputs_ ) noexcept {
     return inputs_ [ 0 ];
 }
 
@@ -332,8 +332,6 @@ template<typename Real> Real f_wire ( const stl::vector<Real> & inputs_ ) noexce
 
 template<typename Real>
 using FunctionPointer = Real ( * ) ( const stl::vector<Real> & inputs_ );
-template<typename Real>
-using FunctionPointerANN = Real ( * ) ( const stl::vector<Real> & inputs_, const stl::vector<Real> & connectionWeights_ );
 
 
 template<typename Real>
