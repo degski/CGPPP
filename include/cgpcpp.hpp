@@ -404,7 +404,7 @@ struct Node {
         actArity { params.arity } {
 
         inputs.reserve ( params.arity );
-        std::generate_n ( sax::back_emplacer ( inputs ), params.arity, [ nodePosition_ ] { return params.getRandomNodeInput ( nodePosition_ ); } );
+        std::generate_n ( sax::back_emplacer ( inputs ), params.arity, [ nodePosition_ ] noexcept { return params.getRandomNodeInput ( nodePosition_ ); } );
     }
 
     [[ maybe_unused ]] Node & operator = ( const Node & ) = default;
@@ -478,10 +478,10 @@ struct Chromosome {
         generation { 0 } {
 
         nodes.reserve ( params.numNodes );
-        std::generate_n ( sax::back_emplacer ( nodes ), params.numNodes, [ this ] { return Node<Real> ( static_cast< int > ( nodes.size ( ) ) ); } );
+        std::generate_n ( sax::back_emplacer ( nodes ), params.numNodes, [ this ] noexcept { return Node<Real> ( static_cast< int > ( nodes.size ( ) ) ); } );
 
         outputNodes.reserve ( params.numOutputs );
-        std::generate_n ( sax::back_emplacer ( outputNodes ), params.numOutputs, [ ] { return params.getRandomChromosomeOutput ( ); } );
+        std::generate_n ( sax::back_emplacer ( outputNodes ), params.numOutputs, [ ] noexcept { return params.getRandomChromosomeOutput ( ); } );
 
         activeNodes.reserve ( params.numNodes );
         setChromosomeActiveNodes ( );
@@ -671,7 +671,7 @@ Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) no
     Real error = Real { 0 };
     for ( const auto & sample : data_ ) {
         chromo_.execute ( sample.input );
-        error = std::inner_product ( std::begin ( chromo_.outputValues ), std::end ( chromo_.outputValues ), std::begin ( sample.output ), error, std::plus<> ( ), [ ] ( const Real a, const Real b ) { return std::abs ( a - b ); } );
+        error = std::inner_product ( std::begin ( chromo_.outputValues ), std::end ( chromo_.outputValues ), std::begin ( sample.output ), error, std::plus<> ( ), [ ] ( const Real a, const Real b ) noexcept { return std::abs ( a - b ); } );
      }
     return error;
 }
@@ -720,7 +720,7 @@ ChromosomePtr<Real> runCGPPP ( const int numGens_ ) {
     ChromosomePtrVec<Real> childrenChromos ( params.lambda );
 
     // Set fitness of the parents.
-    std::for_each ( std::execution::par_unseq, std::begin ( parentChromos ), std::end ( parentChromos ), [ ] ( ChromosomePtr<Real> & parent ) { parent->setFitness ( dataSet ); } );
+    std::for_each ( std::execution::par_unseq, std::begin ( parentChromos ), std::end ( parentChromos ), [ ] ( ChromosomePtr<Real> & parent ) noexcept { parent->setFitness ( dataSet ); } );
 
     // show the user whats going on.
     if ( params.updateFrequency != 0 ) {
