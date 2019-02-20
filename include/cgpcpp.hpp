@@ -140,7 +140,7 @@ struct Data {
                 }
             }
             if ( num_records != data.size ( ) ) {
-                std::cout << "Warning: the actual number of records " << data.size ( ) << " differs from the parameters " << num_records << nl << "Terminating CGPPP-Library" << nl;
+                std::cout << "Error: the actual number of records " << data.size ( ) << " differs from the parameters " << num_records << nl << "Terminating CGPPP-Library" << nl;
                 std::abort ( );
             }
         }
