@@ -404,7 +404,7 @@ struct Node {
         actArity { params.arity } {
 
         inputs.reserve ( params.arity );
-        std::generate_n ( sax::back_emplacer ( inputs ), params.arity, [ nodePosition_ ] noexcept { return params.getRandomNodeInput ( nodePosition_ ); } );
+        std::generate_n ( sax::back_emplacer ( inputs ), params.arity, [ nodePosition_ ] ( ) noexcept { return params.getRandomNodeInput ( nodePosition_ ); } );
     }
 
     [[ maybe_unused ]] Node & operator = ( const Node & ) = default;
@@ -478,10 +478,10 @@ struct Chromosome {
         generation { 0 } {
 
         nodes.reserve ( params.numNodes );
-        std::generate_n ( sax::back_emplacer ( nodes ), params.numNodes, [ this ] noexcept { return Node<Real> ( static_cast< int > ( nodes.size ( ) ) ); } );
+        std::generate_n ( sax::back_emplacer ( nodes ), params.numNodes, [ this ] ( ) noexcept { return Node<Real> ( static_cast< int > ( nodes.size ( ) ) ); } );
 
         outputNodes.reserve ( params.numOutputs );
-        std::generate_n ( sax::back_emplacer ( outputNodes ), params.numOutputs, [ ] noexcept { return params.getRandomChromosomeOutput ( ); } );
+        std::generate_n ( sax::back_emplacer ( outputNodes ), params.numOutputs, [ ] ( ) noexcept { return params.getRandomChromosomeOutput ( ); } );
 
         activeNodes.reserve ( params.numNodes );
         setChromosomeActiveNodes ( );
