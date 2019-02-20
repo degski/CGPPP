@@ -157,21 +157,21 @@ auto dataSet = [ ] { return detail::singletonDataSet.instance ( ).data; } ( );
 
 // Forward declarations.
 
-template<typename Real = float>
+template<typename Real>
 struct Parameters;
 
-template<typename Real = float>
+template<typename Real>
 struct Node;
 
-template<typename Real = float>
+template<typename Real>
 struct Chromosome;
 
-template<typename Real = float>
+template<typename Real>
 using ChromosomePtr = std::unique_ptr<Chromosome<Real>>;
-template<typename Real = float>
+template<typename Real>
 using ChromosomePtrVec = stl::vector<ChromosomePtr<Real>>;
 
-template<typename Real = float>
+template<typename Real>
 void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept;
 template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) noexcept;
@@ -627,7 +627,7 @@ struct Chromosome {
     }
 };
 
-template<typename Real = float>
+template<typename Real>
 struct Results {
     int numRuns;
     Chromosome<Real> **bestChromosomes;
@@ -686,7 +686,7 @@ void selectFittest ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> &
     parents_ = std::move ( candidateChromos_ );
 }
 
-template<typename Real = float>
+template<typename Real>
 using chromos_iterator = typename ChromosomePtrVec<Real>::iterator;
 
 template<typename Real>
@@ -768,106 +768,6 @@ ChromosomePtr<Real> runCGPPP ( const int numGens_ ) {
         // Create the children from the parents.
         childrenChromos.clear ( );
         params.reproductionScheme ( childrenChromos, parentChromos );
-    }
-
-    // Deal with formatting for displaying progress.
-    if ( params.updateFrequency != 0 ) {
-        std::printf ( "\n" );
-    }
-
-    bestChromo->generation = gen;
-
-    return bestChromo;
-}
-
-
-
-template<typename Real>
-Chromosome<Real> runCGPPP2 ( const int numGens_ ) {
-
-    // BestChromo found using runCGPPP.
-    Chromosome<Real> bestChromo;
-
-    // Vector of the children (params.lambda) and parents (params.mu).
-    stl::vector<Chromosome<Real>> chromos;
-
-    int numCandidateChromos;
-
-    // Initialise parent and children chromosomes.
-    chromos.reserve ( params.lambda, params.mu );
-    std::generate_n ( sax::back_emplacer ( chromos ), chromos.capacity ( ), [ ] { return Chromosome<Real> { }; } );
-
-    // Determine the size of the Candidate Chromos based on the evolutionary Strategy.
-    if ( params.evolutionaryStrategy == '+' )
-        numCandidateChromos = params.mu + params.lambda;
-    else if ( params.evolutionaryStrategy == ',' )
-        numCandidateChromos = params.lambda;
-    else {
-        std::printf ( "Error: the evolutionary strategy '%c' is not known.\nTerminating CGPPP-Library.\n", params.evolutionaryStrategy );
-        exit ( 0 );
-    }
-
-    // Set fitness of the parents.
-    std::for_each ( std::begin ( chromos ) + params.lambda, std::end ( chromos ), [ ] ( Chromosome<Real> & p ) { p.setFitness ( dataSet ); } );
-
-    // show the user whats going on.
-    if ( params.updateFrequency != 0 ) {
-        std::printf ( "\n-- Starting CGPPP --\n\n" );
-        std::printf ( "Gen\tfitness\n" );
-    }
-
-    int gen = 0;
-
-    // For each generation.
-    for ( gen = 0; gen < numGens_; ++gen ) {
-
-        // Set fitness of the children of the population.
-        std::for_each ( std::begin ( chromos ), std::begin ( chromos ) + params.lambda, [ ] ( Chromosome<Real> & p ) { p.setFitness ( dataSet ); } );
-
-        // Get best chromosome.
-        Chromosome<Real> * bestChromoPtr = nullptr;
-        Real bestFitness = std::numeric_limits<Real>::max ( );
-        for ( const auto & chromo : chromos ) {
-            if ( chromo.fitness <= bestFitness ) {
-                bestFitness = chromo.fitness;
-                bestChromoPtr = & chromo;
-            }
-        }
-        bestChromo = *bestChromoPtr;
-
-        // Check termination conditions.
-        if ( bestFitness <= params.targetFitness ) {
-            if ( params.updateFrequency != 0 ) {
-                std::printf ( "%d\t%f - Solution Found\n", gen, bestChromo->fitness );
-            }
-            break;
-        }
-
-        // Display progress to the user at the update frequency specified.
-        if ( params.updateFrequency != 0 and ( gen % params.updateFrequency == 0 or gen >= numGens_ - 1 ) ) {
-            std::printf ( "%d\t%f\n", gen, bestChromo->fitness );
-        }
-
-        // Select and reproduce.
-
-        // Set the chromosomes which will be used by the selection scheme
-        // dependant upon the evolutionary strategy. i.e. '+' all are used
-        // by the selection scheme, ',' only the children are.
-        if ( params.evolutionaryStrategy == '+' ) {
-
-            // Note: the children are placed before the parents to
-            // ensure 'new blood' is always selected over old if the
-            // fitness are equal.
-
-            params.reproductionScheme ( chromos, std::begin ( chromos ), std::end ( chromos ) );
-        }
-        else if ( params.evolutionaryStrategy == ',' ) {
-
-            params.reproductionScheme ( chromos, std::begin ( chromos ), std::begin ( chromos ) + params.lambda );
-        }
-
-        // Create the children from the parents.
-        //params.reproductionScheme ( parentChromos, childrenChromos );
     }
 
     // Deal with formatting for displaying progress.
