@@ -121,7 +121,7 @@ struct Data {
             std::getline ( istream, line );
             const auto params = sax::string_split ( line, ",", " ", "\t" );
             if ( 3 != std::size ( params ) ) {
-                std::cout << "Error: data parameters: \"" << line << "\" are invalid" << nl;
+                std::cout << "Error: data parameters: \"" << line << "\" are invalid" << nl << "Terminating CGPPP-Library" << nl;
                 std::abort ( );
             }
             const int in_arity = stringToInt ( params [ 0 ] ), out_arity = stringToInt ( params [ 1 ] ), io_arity = out_arity + in_arity, num_records = stringToInt ( params [ 2 ] );
@@ -139,8 +139,10 @@ struct Data {
                     back.output.emplace_back ( stringToReal ( record [ i ] ) );
                 }
             }
-            if ( num_records != data.size ( ) )
-                std::cout << "Warning: the actual number of records " << data.size ( ) << " differs from the parameters " << num_records << nl;
+            if ( num_records != data.size ( ) ) {
+                std::cout << "Warning: the actual number of records " << data.size ( ) << " differs from the parameters " << num_records << nl << "Terminating CGPPP-Library" << nl;
+                std::abort ( );
+            }
         }
         istream.close ( );
     }
