@@ -127,10 +127,15 @@ struct Data {
             const int in_arity = stringToInt ( params [ 0 ] ), out_arity = stringToInt ( params [ 1 ] ), io_arity = out_arity + in_arity, num_records = stringToInt ( params [ 2 ] );
             data.clear ( );
             data.reserve ( num_records );
+            int count = 1;
             while ( std::getline ( istream, line ) ) {
                 auto back = data.emplace_back ( );
                 back.input.reserve ( in_arity ); back.output.reserve ( out_arity );
                 const auto record = sax::string_split ( line, ",", " ", "\t" );
+                if ( io_arity != record.size ( ) ) {
+                    std::cout << "Error: the size " << record.size ( ) << " of the record on line " << count << " differs from the parameters size " << io_arity << nl << "Terminating CGPPP-Library" << nl;
+                    std::abort ( );
+                }
                 int i = 0;
                 for ( ; i < in_arity; ++i ) {
                     back.input.emplace_back ( stringToReal ( record [ i ] ) );
@@ -138,9 +143,10 @@ struct Data {
                 for ( ; i < io_arity; ++i ) {
                     back.output.emplace_back ( stringToReal ( record [ i ] ) );
                 }
+                ++count;
             }
             if ( num_records != data.size ( ) ) {
-                std::cout << "Error: the actual number of records " << data.size ( ) << " differs from the parameters " << num_records << nl << "Terminating CGPPP-Library" << nl;
+                std::cout << "Error: the actual number of records " << data.size ( ) << " differs from the parameters number of records " << num_records << nl << "Terminating CGPPP-Library" << nl;
                 std::abort ( );
             }
         }
