@@ -721,7 +721,9 @@ Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) no
     Real error = Real { 0 };
     std::for_each ( std::execution::par_unseq, std::cbegin ( data_ ), std::cend ( data_ ), [ & chromo_, & error ] ( const auto & sample ) noexcept {
         chromo_.execute ( sample.input );
-        error = std::inner_product ( std::begin ( chromo_.outputValues ), std::end ( chromo_.outputValues ), std::begin ( sample.output ), error, std::plus<> ( ), [ ] ( const Real a, const Real b ) noexcept { return std::abs ( a - b ); } );
+        error = std::inner_product ( std::begin ( chromo_.outputValues ), std::end ( chromo_.outputValues ), std::begin ( sample.output ), error, std::plus<> ( ), [ ] ( const Real a, const Real b ) noexcept {
+            return std::abs ( a - b );
+        } );
     } );
     return error;
 }
