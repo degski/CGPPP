@@ -493,12 +493,12 @@ template<typename Real> [[ nodiscard ]] Real f_Pi ( const stl::vector<Real> & in
 
 // Node function rand. Returns a random number [ -1, 1 ].
 template<typename Real> [[ nodiscard ]] Real f_randFloat ( const stl::vector<Real> & inputs_ ) noexcept {
-    return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( Rng::prng );
+    return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( Rng::gen );
 }
 
 // Node function bern. Returns a random -1 or 1.
 template<typename Real> [[ nodiscard ]] Real f_randBernoulli ( const stl::vector<Real> & inputs_ ) noexcept {
-    return static_cast< Real > ( std::bernoulli_distribution ( ) ( Rng::prng ) * 2 - 1 );
+    return static_cast< Real > ( std::bernoulli_distribution ( ) ( Rng::gen ) * 2 - 1 );
 }
 
 // Node function and. Return logical AND, returns 1 if all inputs_ are 1 else, 1.

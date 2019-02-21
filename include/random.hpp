@@ -35,17 +35,17 @@
 
 struct Rng {
 
-    static thread_local sax::Rng prng;
+    static thread_local sax::Rng gen;
 
-    static void seedRng ( const std::uint64_t s_ = 0u ) noexcept {
-        Rng::prng.seed ( s_ ? s_ : sax::os_seed ( ) );
+    static void seed ( const std::uint64_t s_ = 0u ) noexcept {
+        Rng::gen.seed ( s_ ? s_ : sax::os_seed ( ) );
     }
 
     [[ nodiscard ]] static int randInt ( const int n_ ) noexcept {
         if ( not ( n_ ) )
             return 0;
-        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( Rng::prng );
+        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( Rng::gen );
     }
 };
 
-thread_local sax::Rng Rng::prng ( sax::os_seed ( ) );
+thread_local sax::Rng Rng::gen ( sax::os_seed ( ) );

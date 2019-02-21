@@ -33,7 +33,7 @@
     <ClInclude Include="..\include\types.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="random.hpp">
+    <ClInclude Include="..\include\random.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
