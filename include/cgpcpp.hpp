@@ -116,10 +116,10 @@ struct Data {
             return *this;
         }
 
-        [[ nodiscard ]] bool operator == ( const_iterator & rhs_ ) const noexcept {
+        [[ nodiscard ]] bool operator == ( const const_iterator & rhs_ ) const noexcept {
             return ptr == rhs_.ptr;
         }
-        [[ nodiscard ]] bool operator != ( const_iterator & rhs_ ) const noexcept {
+        [[ nodiscard ]] bool operator != ( const const_iterator & rhs_ ) const noexcept {
             return ptr != rhs_.ptr;
         }
     };
@@ -689,10 +689,10 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) noexcept {
     Real error = Real { 0 };
-    for ( const auto & sample : data_ ) {
+    std::for_each ( std::begin ( data_ ), std::end ( data_ ), [ & chromo_, & error ] ( const auto & sample ) noexcept {
         chromo_.execute ( sample.input );
         error = std::inner_product ( std::begin ( chromo_.outputValues ), std::end ( chromo_.outputValues ), std::begin ( sample.output ), error, std::plus<> ( ), [ ] ( const Real a, const Real b ) noexcept { return std::abs ( a - b ); } );
-     }
+    } );
     return error;
 }
 
