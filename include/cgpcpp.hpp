@@ -78,28 +78,67 @@ template<typename T>
 using NodeArray = absl::FixedArray<T>;
 
 
+
 template<typename Real>
 struct Data {
 
-    struct Record {
-        stl::vector<Real> input;
-        stl::vector<Real> output;
+    struct Sample {
+        std::span<const Real> input;
+        std::span<const Real> output;
     };
 
-    using DataSet = stl::vector<Record>;
+    Data ( ) noexcept { };
+    Data ( const int in_arity_, const int out_arity_, const int num_records_ ) :
+        in_arity ( in_arity_ ),
+        out_arity ( out_arity_ ),
+        record_size ( in_arity_ + out_arity_ ),
+        num_records ( num_records_ ),
+        data ( record_size * num_records ) { }
+    Data ( fs::path && path_, std::string && file_name_ ) {
+        loadFromFile ( std::move ( path_ ), std::move ( file_name_ ) );
+    }
 
-    using iterator = typename DataSet::iterator;
-    using const_iterator = typename DataSet::const_iterator;
+    private:
 
-    DataSet data;
+    int in_arity, out_arity, record_size, num_records;
+    stl::vector<Real> data;
 
-    [[ nodiscard ]] iterator begin ( ) noexcept { return data.begin ( ); }
-    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return data.cbegin ( ); }
-    [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return data.cbegin ( ); }
+    struct const_iterator {
 
-    [[ nodiscard ]] iterator end ( ) noexcept { return data.end ( ); }
-    [[ nodiscard ]] const_iterator end ( ) const noexcept { return data.cend ( ); }
-    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return data.cend ( ); }
+        const Real * ptr;
+        const Data & ref;
+
+        template<typename It>
+        const_iterator ( It it_, const Data & ref_ ) noexcept :
+            ptr ( &*it_ ),
+            ref ( ref_ ) { }
+
+        [[ nodiscard ]] Sample operator * ( ) noexcept {
+            return { { ptr, ref.in_arity }, { ptr + ref.in_arity, ref.out_arity } };
+        }
+
+        [[ nodiscard ]] const_iterator & operator ++ ( ) noexcept {
+            ptr += ref.record_size;
+            return *this;
+        }
+
+        [[ nodiscard ]] bool operator == ( const_iterator & rhs_ ) const noexcept {
+            return ptr == rhs_.ptr;
+        }
+        [[ nodiscard ]] bool operator != ( const_iterator & rhs_ ) const noexcept {
+            return ptr != rhs_.ptr;
+        }
+    };
+
+    public:
+
+    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return const_iterator ( data.cbegin ( ), * this ); }
+    [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return const_iterator ( data.cbegin ( ), * this ); }
+
+    [[ nodiscard ]] const_iterator end ( ) const noexcept { return const_iterator ( data.cend ( ), * this ); }
+    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return const_iterator ( data.cend ( ), * this ); }
+
+    private:
 
     [[ nodiscard ]] int stringToInt ( const std::string & s_ ) noexcept {
         int i;
@@ -112,6 +151,8 @@ struct Data {
         std::from_chars ( s_.data ( ), s_.data ( ) + s_.length ( ), r, std::chars_format::fixed );
         return r;
     }
+
+    public:
 
     void loadFromFile ( fs::path && path_, std::string && file_name_ ) {
         std::ifstream istream ( std::move ( path_ ) / std::move ( file_name_ ), std::ios::in );
@@ -127,26 +168,20 @@ struct Data {
                 std::cout << "Error: data parameters: \"" << line << "\" are invalid" << nl << "Terminating CGPPP-Library" << nl;
                 std::abort ( );
             }
-            const int in_arity = stringToInt ( params [ 0 ] ), out_arity = stringToInt ( params [ 1 ] ), io_arity = out_arity + in_arity, num_records = stringToInt ( params [ 2 ] );
+            in_arity = stringToInt ( params [ 0 ] ), out_arity = stringToInt ( params [ 1 ] ), record_size = out_arity + in_arity, num_records = stringToInt ( params [ 2 ] );
             data.clear ( );
-            data.reserve ( num_records );
+            data.reserve ( record_size * num_records );
             while ( std::getline ( istream, line ) ) {
-                auto back = data.emplace_back ( );
                 const auto record = sax::string_split ( line, ",", " ", "\t" );
-                if ( io_arity != record.size ( ) ) {
-                    std::cout << "Error: the size " << record.size ( ) << " of the record on line " << data.size ( ) << " differs from the parameters size " << io_arity << nl << "Terminating CGPPP-Library" << nl;
+                if ( record_size != record.size ( ) ) {
+                    std::cout << "Error: the size " << record.size ( ) << " of the record on line " << data.size ( ) << " differs from the parameters size " << record_size << nl << "Terminating CGPPP-Library" << nl;
                     std::abort ( );
                 }
-                back.input.reserve ( in_arity ); back.output.reserve ( out_arity );
-                int i = 0;
-                for ( ; i < in_arity; ++i ) {
-                    back.input.emplace_back ( stringToReal ( record [ i ] ) );
-                }
-                for ( ; i < io_arity; ++i ) {
-                    back.output.emplace_back ( stringToReal ( record [ i ] ) );
+                for ( int i = 0; i < record_size; ++i ) {
+                    data.emplace_back ( stringToReal ( record [ i ] ) );
                 }
             }
-            if ( num_records != data.size ( ) ) {
+            if ( num_records * record_size != data.size ( ) ) {
                 std::cout << "Error: the actual number of records " << data.size ( ) << " differs from the parameters number of records " << num_records << nl << "Terminating CGPPP-Library" << nl;
                 std::abort ( );
             }
@@ -159,9 +194,9 @@ namespace detail {
 sax::singleton<Data<Float>> singletonDataSet;
 }
 
-using DataSet = typename Data<Float>::DataSet;
+using DataSet = Data<Float>;
 
-auto dataSet = [ ] { return detail::singletonDataSet.instance ( ).data; } ( );
+auto dataSet = [ ] { return detail::singletonDataSet.instance ( ); } ( );
 
 
 // Forward declarations.
@@ -501,11 +536,11 @@ struct Chromosome {
         return nodes == rhs_.nodes and outputNodes == rhs_.outputNodes;
     }
     [[ nodiscard ]] bool operator != ( const Chromosome & rhs_ ) const noexcept {
-        return not ( operator == ( rhs_ ) );
+        return nodes != rhs_.nodes or outputNodes != rhs_.outputNodes;
     }
 
     // Executes the given chromosome.
-    void execute ( const stl::vector<Real> & inputs_ ) noexcept {
+    void execute ( const std::span<const Real> & inputs_ ) noexcept {
         // For all of the active nodes.
         for ( const int currentActiveNode : activeNodes ) {
             const int nodeArity = nodes [ currentActiveNode ].actArity;

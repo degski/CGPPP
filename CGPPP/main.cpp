@@ -76,16 +76,14 @@ Stream & operator << ( Stream & out_, const chr & v_ ) noexcept {
     return out_;
 }
 
+
 int main ( ) {
 
-    std::vector<int> v { 1,6,7 };
-    std::vector<int> w { 8,9,0 };
+    cgp::Data<float> data ( "../data/", "table.data" );
 
-    std::cout << v << nl;
-
-    std::move ( std::begin ( v ), std::end ( v ), sax::back_emplacer ( w ) );
-
-    std::cout << w << nl;
+    for ( const auto & r : data ) {
+        std::cout << r.input << r.output << nl;
+    }
 
     return EXIT_SUCCESS;
 }

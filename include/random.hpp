@@ -33,6 +33,7 @@
 #include <sax/prng.hpp>
 #include <sax/uniform_int_distribution.hpp>
 
+
 struct Rng {
 
     static thread_local sax::Rng gen;
