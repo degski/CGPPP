@@ -534,7 +534,8 @@ struct Chromosome {
     }
 
     // Executes the given chromosome.
-    void execute ( const std::span<const Real> & inputs_ ) noexcept {
+    template<typename Container>
+    void execute ( const Container & inputs_ ) noexcept {
         // For all of the active nodes.
         for ( const int currentActiveNode : activeNodes ) {
             const int nodeArity = nodes [ currentActiveNode ].actArity;
