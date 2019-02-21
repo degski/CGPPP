@@ -103,7 +103,7 @@ struct Data {
         using value_type = const Real;
         using pointer = const Real * ;
         using reference = const Real & ;
-        using iterator_category = std::random_access_iterator_tag;
+        using iterator_category = std::bidirectional_iterator_tag;
 
         const Real * rec;
         int in, out, size;
@@ -122,11 +122,22 @@ struct Data {
 
         [[ nodiscard ]] const_iterator & operator ++ ( ) noexcept {
             rec += size;
-            return *this;
+            return * this;
         }
         [[ nodiscard ]] const_iterator & operator -- ( ) noexcept {
             rec -= size;
-            return *this;
+            return * this;
+        }
+
+        [[ nodiscard ]] const_iterator operator ++ ( int ) noexcept {
+            const_iterator tmp = *this;
+            rec += size;
+            return tmp;
+        }
+        [[ nodiscard ]] const_iterator operator -- ( int ) noexcept {
+            const_iterator tmp = *this;
+            rec -= size;
+            return tmp;
         }
 
         [[ nodiscard ]] bool operator == ( const const_iterator & rhs_ ) const noexcept {
@@ -139,11 +150,17 @@ struct Data {
 
     public:
 
-    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return const_iterator ( data.cbegin ( ), * this ); }
+    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return const_iterator ( data.begin ( ), * this ); }
     [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return const_iterator ( data.cbegin ( ), * this ); }
 
-    [[ nodiscard ]] const_iterator end ( ) const noexcept { return const_iterator ( data.cend ( ), * this ); }
+    [[ nodiscard ]] const_iterator end ( ) const noexcept { return const_iterator ( data.end ( ), * this ); }
     [[ nodiscard ]] const_iterator cend ( ) const noexcept { return const_iterator ( data.cend ( ), * this ); }
+
+    [[ nodiscard ]] const_iterator rbegin ( ) const noexcept { return const_iterator ( data.rbegin ( ), *this ); }
+    [[ nodiscard ]] const_iterator crbegin ( ) const noexcept { return const_iterator ( data.crbegin ( ), *this ); }
+
+    [[ nodiscard ]] const_iterator rend ( ) const noexcept { return const_iterator ( data.rend ( ), *this ); }
+    [[ nodiscard ]] const_iterator crend ( ) const noexcept { return const_iterator ( data.crend ( ), *this ); }
 
     private:
 
