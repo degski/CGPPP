@@ -637,7 +637,7 @@ struct Chromosome {
         nodeIndex_ -= params.numInputs;
         auto & node = nodes [ nodeIndex_ ];
         // If the given node is an input or has already been flagged as active, stop.
-        assert ( nodeIndex_ >= 0 ); //figuring out if first check is required.
+        assert ( nodeIndex_ < 0 ); // figuring out if first check is required.
         if ( nodeIndex_ < 0 or node.active )
             return;
         // Log the node as active.
