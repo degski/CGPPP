@@ -169,8 +169,8 @@ struct FunctionSet {
     private:
 
     struct FunctionData {
-        Pointer function;
-        int maxNumInputs = std::numeric_limits<int>::max ( );
+        const Pointer function;
+        const int maxNumInputs = std::numeric_limits<int>::max ( );
     };
 
     public:
