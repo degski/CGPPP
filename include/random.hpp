@@ -31,7 +31,7 @@
 #include <random>
 
 #include <sax/prng.hpp>
-
+#include <sax/uniform_int_distribution.hpp>
 
 struct Rng {
 
@@ -44,7 +44,7 @@ struct Rng {
     [[ nodiscard ]] static int randInt ( const int n_ ) noexcept {
         if ( not ( n_ ) )
             return 0;
-        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( Rng::gen );
+        return sax::uniform_int_distribution<int> ( 0, n_ - 1 ) ( Rng::gen );
     }
 };
 
