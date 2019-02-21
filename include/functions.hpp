@@ -53,11 +53,11 @@
 // https://github.com/degski/Sax/
 
 
-#include <sax/prng.hpp>
 #include <sax/singleton.hpp>
 #include <sax/stl.hpp>
 
 #include "types.hpp"
+#include "random.hpp"
 
 
 namespace cgp {
@@ -247,12 +247,6 @@ struct FunctionSet {
         return functionSet.size ( );
     }
 
-    static thread_local sax::Rng prng;
-
-    static void seedRng ( const std::uint64_t s_ = 0u ) noexcept {
-        FunctionSet::prng.seed ( s_ ? s_ : sax::os_seed ( ) );
-    }
-
     private:
 
     static constexpr frozen::unordered_map<frozen::string, FunctionData, 46> functionSet {
@@ -305,9 +299,6 @@ struct FunctionSet {
     };
 };
 
-template<typename Real>
-thread_local sax::Rng FunctionSet<Real>::prng ( sax::os_seed ( ) );
-
 
 namespace detail {
 sax::singleton<FunctionSet<Float>> singletonFunctionSet;
@@ -347,16 +338,16 @@ template<typename Real> [[ nodiscard ]] Real f_divide ( const stl::vector<Real> 
 // Node function idiv.Returns the first input (cast to int) divided by the second
 // input (cast to int). This function allows for integer arithmatic.
 template<typename Real> [[ nodiscard ]] Real f_idiv ( const stl::vector<Real> & inputs_ ) noexcept {
-    if ( 0 != static_cast< int > ( inputs_ [ 1 ] ) )
-        return static_cast< Real > ( static_cast< int > ( inputs_ [ 0 ] ) / static_cast< int > ( inputs_ [ 1 ] ) );
+    if ( 0 != static_cast<int> ( inputs_ [ 1 ] ) )
+        return static_cast< Real > ( static_cast<int> ( inputs_ [ 0 ] ) / static_cast<int> ( inputs_ [ 1 ] ) );
     return Real { 0 };
 }
 
 // Node function irem. Returns the remainder of the first input (cast to int) divided
 // by the second input (cast to int). This function allows for integer arithmatic.
 template<typename Real> [[ nodiscard ]] Real f_irem ( const stl::vector<Real> & inputs_ ) noexcept {
-    if ( 0 != static_cast< int > ( inputs_ [ 1 ] ) )
-        return static_cast< Real > ( static_cast< int > ( inputs_ [ 0 ] ) % static_cast< int > ( inputs_ [ 1 ] ) );
+    if ( 0 != static_cast<int> ( inputs_ [ 1 ] ) )
+        return static_cast< Real > ( static_cast<int> ( inputs_ [ 0 ] ) % static_cast<int> ( inputs_ [ 1 ] ) );
     return Real { 0 };
 }
 
@@ -502,12 +493,12 @@ template<typename Real> [[ nodiscard ]] Real f_Pi ( const stl::vector<Real> & in
 
 // Node function rand. Returns a random number [ -1, 1 ].
 template<typename Real> [[ nodiscard ]] Real f_randFloat ( const stl::vector<Real> & inputs_ ) noexcept {
-    return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( FunctionSet<Real>::prng );
+    return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( Rng::prng );
 }
 
 // Node function bern. Returns a random -1 or 1.
 template<typename Real> [[ nodiscard ]] Real f_randBernoulli ( const stl::vector<Real> & inputs_ ) noexcept {
-    return static_cast< Real > ( std::bernoulli_distribution ( ) ( FunctionSet<Real>::prng ) * 2 - 1 );
+    return static_cast< Real > ( std::bernoulli_distribution ( ) ( Rng::prng ) * 2 - 1 );
 }
 
 // Node function and. Return logical AND, returns 1 if all inputs_ are 1 else, 1.

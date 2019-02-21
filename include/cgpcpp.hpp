@@ -42,6 +42,7 @@
 #include <map>
 #include <numeric>
 #include <random>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -66,6 +67,8 @@ namespace fs = std::filesystem;
 #include <sax/stl.hpp>
 #include <sax/string_split.hpp>
 
+#include "types.hpp"
+#include "random.hpp"
 #include "functions.hpp"
 
 
@@ -296,21 +299,21 @@ struct Parameters {
     }
 
     [[ nodiscard ]] bool mutate ( ) const noexcept {
-        return mutationDistribution ( FunctionSet<Real>::prng );
+        return mutationDistribution ( Rng::prng );
     }
 
     [[ nodiscard ]] int getRandomFunction ( ) const noexcept {
-        return Parameters::randInt ( functionSet.numFunctions );
+        return Rng::randInt ( functionSet.numFunctions );
     }
 
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( FunctionSet<Real>::prng ) ?
-            Parameters::randInt ( numNodes - nodePosition_ ) + nodePosition_ + numInputs :
-            Parameters::randInt ( numInputs + nodePosition_ );
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( Rng::prng ) ?
+            Rng::randInt ( numNodes - nodePosition_ ) + nodePosition_ + numInputs :
+            Rng::randInt ( numInputs + nodePosition_ );
     }
 
     [[ nodiscard ]] int getRandomChromosomeOutput ( ) const noexcept {
-        return shortcutConnections ? Parameters::randInt ( numInputs + numNodes ) : Parameters::randInt ( numNodes ) + numInputs;
+        return shortcutConnections ? Rng::randInt ( numInputs + numNodes ) : Rng::randInt ( numNodes ) + numInputs;
     }
 
     // Run.
@@ -326,19 +329,6 @@ struct Parameters {
             print ( );
             std::abort ( );
         }
-    }
-
-
-    // Random generator.
-
-    [[ nodiscard ]] static int randInt ( const int n_ ) noexcept {
-        if ( not ( n_ ) )
-            return 0;
-        return std::uniform_int_distribution<int> ( 0, n_ - 1 ) ( FunctionSet<Real>::prng );
-    }
-
-    static void seedRng ( const std::uint64_t s_ = 0u ) noexcept {
-        FunctionSet<Real>::seedRng ( s_ );
     }
 
     // Output.
@@ -478,7 +468,7 @@ struct Chromosome {
         generation { 0 } {
 
         nodes.reserve ( params.numNodes );
-        std::generate_n ( sax::back_emplacer ( nodes ), params.numNodes, [ this ] ( ) noexcept { return Node<Real> ( static_cast< int > ( nodes.size ( ) ) ); } );
+        std::generate_n ( sax::back_emplacer ( nodes ), params.numNodes, [ this ] ( ) noexcept { return Node<Real> ( static_cast<int> ( nodes.size ( ) ) ); } );
 
         outputNodes.reserve ( params.numOutputs );
         std::generate_n ( sax::back_emplacer ( outputNodes ), params.numOutputs, [ ] ( ) noexcept { return params.getRandomChromosomeOutput ( ); } );
@@ -705,7 +695,7 @@ void selectFittest ( chromos_iterator<Real> parents_begin_, chromos_iterator<Rea
 template<typename Real>
 void mutateRandomParent ( ChromosomePtrVec<Real> & children_, const ChromosomePtrVec<Real> & parents_ ) noexcept {
     children_.resize ( params.lambda );
-    std::for_each ( std::execution::par_unseq, std::begin ( children_ ), std::end ( children_ ), [ & parents_ ] ( ChromosomePtr<Real> & child ) noexcept { child = parents_ [ Parameters<Real>::randInt ( parents_.size ( ) ) ]->mutate ( ); } );
+    std::for_each ( std::execution::par_unseq, std::begin ( children_ ), std::end ( children_ ), [ & parents_ ] ( ChromosomePtr<Real> & child ) noexcept { child = parents_ [ Rng::randInt ( parents_.size ( ) ) ]->mutate ( ); } );
 }
 
 
