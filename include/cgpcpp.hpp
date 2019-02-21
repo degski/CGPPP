@@ -545,7 +545,7 @@ struct Chromosome {
         std::generate_n ( sax::back_emplacer ( outputNodes ), params.numOutputs, [ ] ( ) noexcept { return params.getRandomChromosomeOutput ( ); } );
 
         activeNodes.reserve ( params.numNodes );
-        setChromosomeActiveNodes ( );
+        setActiveNodes ( );
     }
     Chromosome ( const Chromosome & rhs_ ) :
         nodes ( rhs_.nodes ),
@@ -608,32 +608,26 @@ struct Chromosome {
     [[ nodiscard ]] std::unique_ptr<Chromosome> mutate ( ) const noexcept {
         auto mutated = std::make_unique<Chromosome> ( * this );
         params.mutationType ( * mutated );
-        mutated->setChromosomeActiveNodes ( );
+        mutated->setActiveNodes ( );
         return mutated;
     }
 
     void setFitness ( const DataSet & data_set_ ) noexcept {
-        setChromosomeActiveNodes ( );
+        setActiveNodes ( );
         for ( auto & node : nodes )
             node.reset ( );
         fitness = params.fitnessFunction ( * this, data_set_ );
     }
 
-    // Set the active nodes in the given chromosome.
-    void setChromosomeActiveNodes ( ) noexcept {
+    // Set the active nodes in chromosome.
+    void setActiveNodes ( ) noexcept {
         // Reset the active nodes.
         activeNodes.clear ( );
         for ( auto & node : nodes )
             node.active = false;
         // Start the recursive search for active nodes from
         // the output nodes for the number of output nodes.
-        for ( auto & nodeIndex : outputNodes ) {
-            // If the output connects to a chromosome input, skip.
-            if ( nodeIndex < params.numInputs )
-                continue;
-            // Begin a recursive search for active nodes.
-            recursivelySetActiveNodes ( nodeIndex );
-        }
+        std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( auto & index ) noexcept { recursivelySetActiveNodes ( index ); } );
         // Place active nodes in order.
         std::sort ( std::begin ( activeNodes ), std::end ( activeNodes ) );
     }
@@ -641,30 +635,24 @@ struct Chromosome {
     // Used by setActiveNodes to recursively search for active nodes.
     void recursivelySetActiveNodes ( int nodeIndex_ ) noexcept {
         nodeIndex_ -= params.numInputs;
+        auto & node = nodes [ nodeIndex_ ];
         // If the given node is an input or has already been flagged as active, stop.
-        if ( nodeIndex_ < 0 or nodes [ nodeIndex_ ].active )
+        assert ( nodeIndex_ >= 0 ); //figuring out if first check is required.
+        if ( nodeIndex_ < 0 or node.active )
             return;
         // Log the node as active.
         activeNodes.push_back ( nodeIndex_ );
-        nodes [ nodeIndex_ ].active = true;
-        // Set the nodes actual arity.
-        nodes [ nodeIndex_ ].actArity = getChromosomeNodeArity ( nodes [ nodeIndex_ ] );
+        node.active = true;
+        node.actArity = std::min ( functionSet.maxNumInputs [ node.function ], params.arity );
         // Recursively log all the nodes to which the current nodes connect as active.
-        for ( int i = 0; i < nodes [ nodeIndex_ ].actArity; ++i )
-            recursivelySetActiveNodes ( nodes [ nodeIndex_ ].inputs [ i ] );
-    }
-
-    // Gets the chromosome node arity.
-    [[ nodiscard ]] int getChromosomeNodeArity ( const Node<Real> & node_ ) {
-        const int functionArity = functionSet.maxNumInputs [ node_.function ];
-        return functionArity == -1 or params.arity < functionArity ? params.arity : functionArity;
+        std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.actArity, [ this ] ( auto & index ) noexcept { recursivelySetActiveNodes ( index ); } );
     }
 
     // Output.
 
     void print ( ) noexcept {
         // Set the active nodes in the given chromosome.
-        setChromosomeActiveNodes ( );
+        setActiveNodes ( );
         // For all the chromo inputs.
         int i = 0;
         for ( ; i < params.numInputs; ++i ) {
@@ -1284,7 +1272,7 @@ DLL_EXPORT struct chromosome *initialiseChromosomeFromChromosome ( struct chromo
     copyFunctionSet ( chromoNew->functionSet, chromo->functionSet );
 
     /* set the active nodes in the newly generated chromosome */
-    setChromosomeActiveNodes ( chromoNew );
+    setActiveNodes ( chromoNew );
 
     /* used internally by exicute chromosome */
     chromoNew->nodeInputsHold = ( double* ) std::malloc ( chromo->arity * sizeof ( double ) );
@@ -1406,7 +1394,7 @@ DLL_EXPORT void mutateChromosome ( struct parameters *params, struct chromosome 
 
     params.mutationType ( params, chromo );
 
-    setChromosomeActiveNodes ( chromo );
+    setActiveNodes ( chromo );
 }
 
 
@@ -1419,7 +1407,7 @@ DLL_EXPORT void setChromosomeFitness ( struct parameters *params, struct chromos
 
     double fitness;
 
-    setChromosomeActiveNodes ( chromo );
+    setActiveNodes ( chromo );
 
     resetChromosome ( chromo );
 

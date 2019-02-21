@@ -251,9 +251,9 @@ struct FunctionSet {
     private:
 
     static constexpr frozen::unordered_map<frozen::string, FunctionData, 47> functionSet {
-        { "add", { function::f_add, -1 } },
+        { "add", { function::f_add, std::numeric_limits<int>::max ( ) } },
         { "sub", { function::f_sub, 2 } },
-        { "mul", { function::f_mul, -1 } },
+        { "mul", { function::f_mul, std::numeric_limits<int>::max ( ) } },
         { "div", { function::f_divide, 2 } },
         { "reci", { function::f_reciprocal, 1 } },
         { "idiv", { function::f_idiv, 2 } },
@@ -290,12 +290,12 @@ struct FunctionSet {
         { "16", { function::f_16, 0 } },
         { "e", { function::f_Euler, 0 } },
         { "pi", { function::f_Pi, 0 } },
-        { "and", { function::f_and, -1 } },
-        { "nand", { function::f_nand, -1 } },
-        { "or", { function::f_or, -1 } },
-        { "nor", { function::f_nor, -1 } },
-        { "xor", { function::f_xor, -1 } },
-        { "xnor", { function::f_xnor, -1 } },
+        { "and", { function::f_and, std::numeric_limits<int>::max ( ) } },
+        { "nand", { function::f_nand, std::numeric_limits<int>::max ( ) } },
+        { "or", { function::f_or, std::numeric_limits<int>::max ( ) } },
+        { "nor", { function::f_nor, std::numeric_limits<int>::max ( ) } },
+        { "xor", { function::f_xor, std::numeric_limits<int>::max ( ) } },
+        { "xnor", { function::f_xnor, std::numeric_limits<int>::max ( ) } },
         { "not", { function::f_not, 1 } },
         { "wire", { function::f_wire, 1 } }
     };
