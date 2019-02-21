@@ -625,14 +625,7 @@ struct Chromosome {
         std::for_each ( std::begin ( nodes ), std::end ( nodes ), [ ] ( auto & node ) noexcept { node.active = false; } );
     }
 
-    // Set the active nodes in chromosome.
-    void setActiveNodes ( ) noexcept {
-        resetActiveNodes ( );
-        std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( const auto index ) noexcept { recursivelySetActiveNodes ( index ); } );
-        std::sort ( std::begin ( activeNodes ), std::end ( activeNodes ) );
-    }
-
-    // Used by setActiveNodes to recursively search for active nodes.
+     // Used by setActiveNodes to recursively search for active nodes.
     void recursivelySetActiveNodes ( int nodeIndex_ ) noexcept {
         nodeIndex_ -= params.numInputs;
         auto & node = nodes [ nodeIndex_ ];
@@ -645,6 +638,13 @@ struct Chromosome {
         node.active = true;
         node.actArity = std::min ( functionSet.maxNumInputs [ node.function ], params.arity );
         std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.actArity, [ this ] ( const auto index ) noexcept { recursivelySetActiveNodes ( index ); } );
+    }
+
+    // Set the active nodes in chromosome.
+    void setActiveNodes ( ) noexcept {
+        resetActiveNodes ( );
+        std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( const auto index ) noexcept { recursivelySetActiveNodes ( index ); } );
+        std::sort ( std::begin ( activeNodes ), std::end ( activeNodes ) );
     }
 
     // Output.
