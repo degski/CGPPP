@@ -683,7 +683,7 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 }
 
 
-// The default fitness function used by CGP-Library. simply assigns an
+// The default fitness function used by CGPPP-Library. simply assigns an
 // error of the sum of the absolute differences between the target and
 // actual outputs for all outputs over all samples.
 template<typename Real>
@@ -812,21 +812,21 @@ ChromosomePtr<Real> runCGPPP ( const int numGens_ ) {
 
 #if  0
 /*
-    This file is part of CGP-Library
+    This file is part of CGPPP-Library
     Copyright (c) Andrew James Turner 2014, 2015 (andrew.turner@york.ac.uk)
 
-    CGP-Library is free software: you can redistribute it and/or modify
+    CGPPP-Library is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    CGP-Library is distributed in the hope that it will be useful,
+    CGPPP-Library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
     GNU Lesser General Public License for more details.
 
     You should have received a copy of the GNU Lesser General Public License
-    along with CGP-Library. If not, see <http://www.gnu.org/licenses/>.
+    along with CGPPP-Library. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <cstdio>
@@ -939,7 +939,7 @@ DLL_EXPORT void setNumInputs ( struct parameters *params, int numInputs ) {
 
     /* error checking */
     if ( numInputs <= 0 ) {
-        printf ( "Error: number of chromosome inputs cannot be less than one; %d is invalid.\nTerminating CGP-Library.\n", numInputs );
+        printf ( "Error: number of chromosome inputs cannot be less than one; %d is invalid.\nTerminating CGPPP-Library.\n", numInputs );
         exit ( 0 );
     }
 
@@ -954,7 +954,7 @@ DLL_EXPORT void setNumNodes ( struct parameters *params, int numNodes ) {
 
     /* error checking */
     if ( numNodes < 0 ) {
-        printf ( "Warning: number of chromosome nodes cannot be negative; %d is invalid.\nTerminating CGP-Library.\n", numNodes );
+        printf ( "Warning: number of chromosome nodes cannot be negative; %d is invalid.\nTerminating CGPPP-Library.\n", numNodes );
         exit ( 0 );
     }
 
@@ -969,7 +969,7 @@ DLL_EXPORT void setNumOutputs ( struct parameters *params, int numOutputs ) {
 
     /* error checking */
     if ( numOutputs < 0 ) {
-        printf ( "Warning: number of chromosome outputs cannot be less than one; %d is invalid.\nTerminating CGP-Library.\n", numOutputs );
+        printf ( "Warning: number of chromosome outputs cannot be less than one; %d is invalid.\nTerminating CGPPP-Library.\n", numOutputs );
         exit ( 0 );
     }
 
@@ -984,7 +984,7 @@ DLL_EXPORT void setArity ( struct parameters *params, int arity ) {
 
     /* error checking */
     if ( arity < 0 ) {
-        printf ( "Warning: node arity cannot be less than one; %d is invalid.\nTerminating CGP-Library.\n", arity );
+        printf ( "Warning: node arity cannot be less than one; %d is invalid.\nTerminating CGPPP-Library.\n", arity );
         exit ( 0 );
     }
 
@@ -1193,7 +1193,7 @@ DLL_EXPORT struct chromosome *initialiseChromosomeFromChromosome ( struct chromo
 
     /* check that functionSet contains functions*/
     if ( chromo == NULL ) {
-        printf ( "Error: cannot initialise chromosome from uninitialised chromosome.\nTerminating CGP-Library.\n" );
+        printf ( "Error: cannot initialise chromosome from uninitialised chromosome.\nTerminating CGPPP-Library.\n" );
         exit ( 0 );
     }
 
@@ -1886,7 +1886,7 @@ DLL_EXPORT struct chromosome* getChromosome ( struct results *rels, int run ) {
 
     /* do some error checking */
     if ( rels == NULL ) {
-        printf ( "Error: cannot get best chromosome from uninitialised results.\nTerminating CGP-Library.\n" );
+        printf ( "Error: cannot get best chromosome from uninitialised results.\nTerminating CGPPP-Library.\n" );
         exit ( 0 );
     }
 
@@ -2145,19 +2145,19 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
 
     /* error checking */
     if ( numGens < 0 ) {
-        printf ( "Error: %d generations is invalid. The number of generations must be >= 0.\n Terminating CGP-Library.\n", numGens );
+        printf ( "Error: %d generations is invalid. The number of generations must be >= 0.\n Terminating CGPPP-Library.\n", numGens );
         exit ( 0 );
     }
 
     if ( data != NULL and params.numInputs != data->numInputs ) {
         printf ( "Error: The number of inputs specified in the dataSet (%d) does not match the number of inputs specified in the parameters (%d).\n", data->numInputs, params.numInputs );
-        printf ( "Terminating CGP-Library.\n" );
+        printf ( "Terminating CGPPP-Library.\n" );
         exit ( 0 );
     }
 
     if ( data != NULL and params.numOutputs != data->numOutputs ) {
         printf ( "Error: The number of outputs specified in the dataSet (%d) does not match the number of outputs specified in the parameters (%d).\n", data->numOutputs, params.numOutputs );
-        printf ( "Terminating CGP-Library.\n" );
+        printf ( "Terminating CGPPP-Library.\n" );
         exit ( 0 );
     }
 
@@ -2186,7 +2186,7 @@ DLL_EXPORT struct chromosome* runCGP ( struct parameters *params, struct dataSet
         numCandidateChromos = params.lambda;
     }
     else {
-        printf ( "Error: the evolutionary strategy '%c' is not known.\nTerminating CGP-Library.\n", params.evolutionaryStrategy );
+        printf ( "Error: the evolutionary strategy '%c' is not known.\nTerminating CGPPP-Library.\n", params.evolutionaryStrategy );
         exit ( 0 );
     }
 
