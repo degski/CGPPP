@@ -116,6 +116,7 @@ struct Data {
             in ( static_cast<short> ( in_ ) ),
             out ( static_cast<short> ( out_ ) ),
             size ( in + out ) {
+            assert ( ( in_ + out_ ) < static_cast<int> ( std::numeric_limits<short>::max ( ) ) );
         }
 
         [[ nodiscard ]] Sample operator * ( ) noexcept {
