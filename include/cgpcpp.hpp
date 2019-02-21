@@ -105,9 +105,11 @@ struct Data {
         using reference = const Real & ;
         using iterator_category = std::bidirectional_iterator_tag;
 
-        const Real * rec;
+        const Real * rec = nullptr;
         short in, out, size, _pad;
 
+        const_iterator ( ) noexcept { } // ?
+        const_iterator ( const const_iterator & ) noexcept = default;
         template<typename It>
         const_iterator ( It it_, const int in_, const int out_ ) noexcept :
             rec ( &*it_ ),
@@ -117,35 +119,44 @@ struct Data {
         }
 
         [[ nodiscard ]] Sample operator * ( ) noexcept {
+            assert ( rec );
             return { { rec, in }, { rec + in, out } };
         }
 
         [[ nodiscard ]] const_iterator & operator ++ ( ) noexcept {
+            assert ( rec );
             rec += size;
             return * this;
         }
         [[ nodiscard ]] const_iterator & operator -- ( ) noexcept {
+            assert ( rec );
             rec -= size;
             return * this;
         }
 
         [[ nodiscard ]] const_iterator operator ++ ( int ) noexcept {
+            assert ( rec );
             const_iterator tmp = * this;
             rec += size;
             return tmp;
         }
         [[ nodiscard ]] const_iterator operator -- ( int ) noexcept {
+            assert ( rec );
             const_iterator tmp = * this;
             rec -= size;
             return tmp;
         }
 
         [[ nodiscard ]] bool operator == ( const const_iterator & rhs_ ) const noexcept {
+            assert ( rec );
             return rec == rhs_.rec;
         }
         [[ nodiscard ]] bool operator != ( const const_iterator & rhs_ ) const noexcept {
+            assert ( rec );
             return rec != rhs_.rec;
         }
+
+        [[ nodiscard ]] const_iterator & operator = ( const const_iterator & ) noexcept = default;
     };
 
     public:
@@ -718,8 +729,9 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 // actual outputs for all outputs over all samples.
 template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) noexcept {
+    // maybe parallel below is not possible, it requires a default constructor for the data iterator?
     Real error = Real { 0 };
-    std::for_each ( std::cbegin ( data_ ), std::cend ( data_ ), [ & chromo_, & error ] ( const auto & sample ) noexcept {
+    std::for_each ( std::execution::par_unseq, std::cbegin ( data_ ), std::cend ( data_ ), [ & chromo_, & error ] ( const auto & sample ) noexcept {
         chromo_.execute ( sample.input );
         error = std::inner_product ( std::begin ( chromo_.outputValues ), std::end ( chromo_.outputValues ), std::begin ( sample.output ), error, std::plus<> ( ), [ ] ( const Real a, const Real b ) noexcept { return std::abs ( a - b ); } );
     } );
