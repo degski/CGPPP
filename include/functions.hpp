@@ -70,9 +70,10 @@ template<typename Real> [[ nodiscard ]] Real f_add ( const stl::vector<Real> & i
 template<typename Real> [[ nodiscard ]] Real f_sub ( const stl::vector<Real> & inputs_ ) noexcept;
 // Node function mul. Returns the multiplication of all the inputs_.
 template<typename Real> [[ nodiscard ]] Real f_mul ( const stl::vector<Real> & inputs_ ) noexcept;
-// Node function div. Returns the first input divided by the second input divided by
-// the third input etc.
+// Node function div. Returns the first input divided by the second.
 template<typename Real> [[ nodiscard ]] Real f_divide ( const stl::vector<Real> & inputs_ ) noexcept;
+// Node function reci. Returns the reciproke of the first input.
+template<typename Real> [[ nodiscard ]] Real f_reciprocal ( const stl::vector<Real> & inputs_ ) noexcept;
 // Node function idiv.Returns the first input (cast to int) divided by the second
 // input (cast to int). This function allows for integer arithmatic.
 template<typename Real> [[ nodiscard ]] Real f_idiv ( const stl::vector<Real> & inputs_ ) noexcept;
@@ -249,11 +250,12 @@ struct FunctionSet {
 
     private:
 
-    static constexpr frozen::unordered_map<frozen::string, FunctionData, 46> functionSet {
+    static constexpr frozen::unordered_map<frozen::string, FunctionData, 47> functionSet {
         { "add", { function::f_add, -1 } },
         { "sub", { function::f_sub, 2 } },
         { "mul", { function::f_mul, -1 } },
         { "div", { function::f_divide, 2 } },
+        { "reci", { function::f_reciprocal, 1 } },
         { "idiv", { function::f_idiv, 2 } },
         { "irem", { function::f_irem, 2 } },
         { "neg", { function::f_negate, 1 } },
@@ -333,6 +335,13 @@ template<typename Real> [[ nodiscard ]] Real f_divide ( const stl::vector<Real> 
         return inputs_ [ 0 ] / inputs_ [ 1 ];
     return Real { 0 };
     // return std::accumulate ( std::next ( std::begin ( inputs_ ) ), std::end ( inputs_ ), inputs_ [ 0 ], std::divides<Real> ( ) );
+}
+
+// Node function reci. Returns the reciproke of the first input.
+template<typename Real> [[ nodiscard ]] Real f_reciprocal ( const stl::vector<Real> & inputs_ ) noexcept {
+    if ( inputs_ [ 0 ] )
+        return Real { 1 } / inputs_ [ 0 ];
+    return Real { 0 };
 }
 
 // Node function idiv.Returns the first input (cast to int) divided by the second

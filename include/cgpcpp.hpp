@@ -88,12 +88,6 @@ struct Data {
     };
 
     Data ( ) noexcept { };
-    Data ( const int in_arity_, const int out_arity_, const int num_records_ ) :
-        in_arity ( in_arity_ ),
-        out_arity ( out_arity_ ),
-        record_size ( in_arity_ + out_arity_ ),
-        num_records ( num_records_ ),
-        data ( record_size * num_records ) { }
     Data ( fs::path && path_, std::string && file_name_ ) {
         loadFromFile ( std::move ( path_ ), std::move ( file_name_ ) );
     }
