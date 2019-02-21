@@ -619,16 +619,16 @@ struct Chromosome {
         fitness = params.fitnessFunction ( * this, data_set_ );
     }
 
+    // Reset the active nodes in chromosome.
+    void resetActiveNodes ( ) noexcept {
+        activeNodes.clear ( );
+        std::for_each ( std::begin ( nodes ), std::end ( nodes ), [ ] ( auto & node ) noexcept { node.active = false; } );
+    }
+
     // Set the active nodes in chromosome.
     void setActiveNodes ( ) noexcept {
-        // Reset the active nodes.
-        activeNodes.clear ( );
-        for ( auto & node : nodes )
-            node.active = false;
-        // Start the recursive search for active nodes from
-        // the output nodes for the number of output nodes.
-        std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( auto & index ) noexcept { recursivelySetActiveNodes ( index ); } );
-        // Place active nodes in order.
+        resetActiveNodes ( );
+        std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( const auto index ) noexcept { recursivelySetActiveNodes ( index ); } );
         std::sort ( std::begin ( activeNodes ), std::end ( activeNodes ) );
     }
 
@@ -644,8 +644,7 @@ struct Chromosome {
         activeNodes.push_back ( nodeIndex_ );
         node.active = true;
         node.actArity = std::min ( functionSet.maxNumInputs [ node.function ], params.arity );
-        // Recursively log all the nodes to which the current nodes connect as active.
-        std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.actArity, [ this ] ( auto & index ) noexcept { recursivelySetActiveNodes ( index ); } );
+        std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.actArity, [ this ] ( const auto index ) noexcept { recursivelySetActiveNodes ( index ); } );
     }
 
     // Output.
