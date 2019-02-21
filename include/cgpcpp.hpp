@@ -106,14 +106,14 @@ struct Data {
         using iterator_category = std::bidirectional_iterator_tag;
 
         const Real * rec;
-        int in, out, size;
+        short in, out, size, _pad;
 
         template<typename It>
-        const_iterator ( It it_, const Data & ref_ ) noexcept :
+        const_iterator ( It it_, const int in_, const int out_ ) noexcept :
             rec ( &*it_ ),
-            in ( ref_.in_arity ),
-            out ( ref_.out_arity ),
-            size ( ref_.record_size ) {
+            in ( static_cast<short> ( in_ ) ),
+            out ( static_cast<short> ( out_ ) ),
+            size ( in + out ) {
         }
 
         [[ nodiscard ]] Sample operator * ( ) noexcept {
@@ -130,12 +130,12 @@ struct Data {
         }
 
         [[ nodiscard ]] const_iterator operator ++ ( int ) noexcept {
-            const_iterator tmp = *this;
+            const_iterator tmp = * this;
             rec += size;
             return tmp;
         }
         [[ nodiscard ]] const_iterator operator -- ( int ) noexcept {
-            const_iterator tmp = *this;
+            const_iterator tmp = * this;
             rec -= size;
             return tmp;
         }
@@ -150,17 +150,17 @@ struct Data {
 
     public:
 
-    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return const_iterator ( data.begin ( ), * this ); }
-    [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return const_iterator ( data.cbegin ( ), * this ); }
+    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return const_iterator ( data.begin ( ), in_arity, out_arity ); }
+    [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return const_iterator ( data.cbegin ( ), in_arity, out_arity ); }
 
-    [[ nodiscard ]] const_iterator end ( ) const noexcept { return const_iterator ( data.end ( ), * this ); }
-    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return const_iterator ( data.cend ( ), * this ); }
+    [[ nodiscard ]] const_iterator end ( ) const noexcept { return const_iterator ( data.end ( ), in_arity, out_arity ); }
+    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return const_iterator ( data.cend ( ), in_arity, out_arity ); }
 
-    [[ nodiscard ]] const_iterator rbegin ( ) const noexcept { return const_iterator ( data.rbegin ( ), *this ); }
-    [[ nodiscard ]] const_iterator crbegin ( ) const noexcept { return const_iterator ( data.crbegin ( ), *this ); }
+    [[ nodiscard ]] const_iterator rbegin ( ) const noexcept { return const_iterator ( data.rbegin ( ), in_arity, out_arity ); }
+    [[ nodiscard ]] const_iterator crbegin ( ) const noexcept { return const_iterator ( data.crbegin ( ), in_arity, out_arity ); }
 
-    [[ nodiscard ]] const_iterator rend ( ) const noexcept { return const_iterator ( data.rend ( ), *this ); }
-    [[ nodiscard ]] const_iterator crend ( ) const noexcept { return const_iterator ( data.crend ( ), *this ); }
+    [[ nodiscard ]] const_iterator rend ( ) const noexcept { return const_iterator ( data.rend ( ), in_arity, out_arity ); }
+    [[ nodiscard ]] const_iterator crend ( ) const noexcept { return const_iterator ( data.crend ( ), in_arity, out_arity ); }
 
     private:
 
@@ -505,7 +505,7 @@ struct Chromosome {
         std::ofstream ostream ( std::move ( path_ ) / ( std::move ( file_name_ ) + std::string ( ".chromo" ) ), std::ios::binary );
         {
             cereal::BinaryOutputArchive archive ( ostream );
-            archive ( *this );
+            archive ( * this );
         }
         ostream.close ( );
     }
@@ -514,7 +514,7 @@ struct Chromosome {
         std::ifstream istream ( std::move ( path_ ) / ( std::move ( file_name_ ) + std::string ( ".chromo" ) ), std::ios::binary );
         {
             cereal::BinaryInputArchive archive ( istream );
-            archive ( *this );
+            archive ( * this );
         }
         istream.close ( );
     }
