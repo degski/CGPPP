@@ -689,7 +689,7 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) noexcept {
     Real error = Real { 0 };
-    std::for_each ( std::begin ( data_ ), std::end ( data_ ), [ & chromo_, & error ] ( const auto & sample ) noexcept {
+    std::for_each ( std::execution::par_unseq, std::begin ( data_ ), std::end ( data_ ), [ & chromo_, & error ] ( const auto & sample ) noexcept {
         chromo_.execute ( sample.input );
         error = std::inner_product ( std::begin ( chromo_.outputValues ), std::end ( chromo_.outputValues ), std::begin ( sample.output ), error, std::plus<> ( ), [ ] ( const Real a, const Real b ) noexcept { return std::abs ( a - b ); } );
     } );
