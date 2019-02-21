@@ -164,13 +164,13 @@ struct Data {
 
     private:
 
-    [[ nodiscard ]] int stringToInt ( const std::string & s_ ) noexcept {
+    [[ nodiscard ]] int stringToInt ( const std::string & s_ ) const noexcept {
         int i;
         std::from_chars ( s_.data ( ), s_.data ( ) + s_.length ( ), i, 10 );
         return i;
     }
 
-    [[ nodiscard ]] Real stringToReal ( const std::string & s_ ) noexcept {
+    [[ nodiscard ]] Real stringToReal ( const std::string & s_ ) const noexcept {
         Real r;
         std::from_chars ( s_.data ( ), s_.data ( ) + s_.length ( ), r, std::chars_format::fixed );
         return r;
