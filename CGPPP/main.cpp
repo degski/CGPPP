@@ -85,6 +85,8 @@ int main ( ) {
         std::cout << r.input << r.output << nl;
     }
 
+    std::cout << std::numeric_limits<std::uint64_t>::max ( ) << nl;
+
     return EXIT_SUCCESS;
 }
 
