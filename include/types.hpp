@@ -53,6 +53,5 @@ template<typename Stream, typename Container>
 Stream & operator << ( Stream & out_, const Container & v_ ) noexcept {
     for ( const auto & v : v_ )
         out_ << ' ' << v;
-    out_ << '\n';
     return out_;
 }

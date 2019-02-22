@@ -86,16 +86,20 @@ struct FunctionStats {
     double time = 0.0;
     int numExecutions = 0;
 
+    void update ( const double elapsed_time_ ) noexcept {
+        time += ( elapsed_time_ - time ) / ++numExecutions;
+    }
+
     template<typename Stream>
     friend Stream & operator << ( Stream & out_, const FunctionStats & v_ ) noexcept {
-        out_ << "<\"" << v_.name << "\" " << static_cast<int> ( v_.time ) << ' ' << v_.numExecutions << '>' << nl;
+        out_ << "<\"" << v_.name << "\" " << static_cast<int> ( v_.time ) /* << ' ' << v_.numExecutions */ << '>' << nl;
         return out_;
     }
 };
 
 
-stl::vector<float> getInputs ( const int max_ ) noexcept {
-    const int size = std::min ( ( std::geometric_distribution<> ( ) ( cgp::Rng::gen ) + 1 ), max_ );
+stl::vector<float> getInputs ( const int num_inputs_ ) noexcept {
+    const int size = num_inputs_ == cgp::FunctionSet<float>::variableNumInputs ? std::geometric_distribution<> ( ) ( cgp::Rng::gen ) + 2  : num_inputs_;
     stl::vector<float> v ( size );
     std::generate ( std::begin ( v ), std::end ( v ), [ ] { return std::uniform_real_distribution<float> ( -1.0f, 1.0f ) ( cgp::Rng::gen ); } );
     return v;
@@ -105,7 +109,9 @@ float timeRandomFunction ( stl::vector<FunctionStats> & stats_ ) noexcept {
     const int i = cgp::Rng::randInt ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) );
     const auto f = cgp::FunctionSet<float>::builtinFunction ( i );
 
-    const auto input = getInputs ( f.maxNumInputs );
+    const auto input = getInputs ( f.numInputs );
+
+    // std::cout << cgp::FunctionSet<float>::builtinFunctionName ( i ).data ( ) << ' ' << input.size ( ) << ' ' << input << " > " << f.function ( input ) << nl;
 
     float r = 0.0f;
 
@@ -115,12 +121,9 @@ float timeRandomFunction ( stl::vector<FunctionStats> & stats_ ) noexcept {
     for ( int i = 0; i < 1'000; ++i ) {
         r += f.function ( input );
     }
-    const double elapsed = timer.get_elapsed_us ( );
+    stats_ [ i ].update ( timer.get_elapsed_us ( ) );
 
-    ++stats_ [ i ].numExecutions;
-    stats_ [ i ].time += ( elapsed - stats_ [ i ].time ) / stats_ [ i ].numExecutions;
-
-    return r / 100.0f;
+    return r / 1000.0f;
 }
 
 
@@ -134,11 +137,14 @@ int main ( ) {
 
     float r = 0.0f;
 
-    for ( int i = 0; i < 1'000; ++i ) {
+    for ( int i = 0; i < 10'000'000; ++i ) {
         r += timeRandomFunction ( stats );
     }
 
     std::cout << r << nl;
+
+    auto min_s = std::min_element ( std::begin ( stats ), std::end ( stats ), [ ] ( const FunctionStats & a, const FunctionStats b ) { return a.time < b.time; } );
+    std::for_each ( std::begin ( stats ), std::end ( stats ), [ & min_s ] ( FunctionStats & s ) { s.time /= min_s->time; } );
 
     std::cout << stats << nl;
 

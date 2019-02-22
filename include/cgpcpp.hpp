@@ -636,7 +636,7 @@ struct Chromosome {
         // Log the node as active.
         activeNodes.push_back ( nodeIndex_ );
         node.active = true;
-        node.actArity = std::min ( functionSet.maxNumInputs [ node.function ], params.arity );
+        node.actArity = std::min ( functionSet.numInputs [ node.function ], params.arity );
         std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.actArity, [ this ] ( const auto index ) noexcept { recursivelySetActiveNodes ( index ); } );
     }
 
@@ -945,7 +945,7 @@ struct node {
 struct functionSet {
     int numFunctions;
     char functionNames [ FUNCTIONSETSIZE ] [ FUNCTIONNAMELENGTH ];
-    int maxNumInputs [ FUNCTIONSETSIZE ];
+    int numInputs [ FUNCTIONSETSIZE ];
     double ( *functions [ FUNCTIONSETSIZE ] )( const int numInputs, const double *inputs, const double *connectionWeights );
 };
 
@@ -1464,7 +1464,7 @@ DLL_EXPORT int getNumChromosomeOutputs ( struct chromosome *chromo ) {
 DLL_EXPORT int getChromosomeNodeArity ( struct chromosome *chromo, int index ) {
 
     int chromoArity = chromo->arity;
-    int maxArity = chromo->functionSet->maxNumInputs [ chromo->nodes [ index ]->function ];
+    int maxArity = chromo->functionSet->numInputs [ chromo->nodes [ index ]->function ];
 
     if ( maxArity == -1 ) {
         return chromoArity;

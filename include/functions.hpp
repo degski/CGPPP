@@ -66,7 +66,7 @@ namespace function {
 
 // Node function add. Returns the sum of all the inputs.
 template<typename Real> [[ nodiscard ]] Real f_add ( const stl::vector<Real> & inputs_ ) noexcept;
-// Node function sub. Returns the first input minus all remaining inputs_.
+// Node function sub. Returns the first input minus minus the second input.
 template<typename Real> [[ nodiscard ]] Real f_sub ( const stl::vector<Real> & inputs_ ) noexcept;
 // Node function mul. Returns the multiplication of all the inputs_.
 template<typename Real> [[ nodiscard ]] Real f_mul ( const stl::vector<Real> & inputs_ ) noexcept;
@@ -166,18 +166,20 @@ struct FunctionSet {
 
     using Pointer = FunctionPointer<Real>;
 
+    static constexpr int variableNumInputs = std::numeric_limits<int>::max ( );
+
     private:
 
     struct FunctionData {
         const Pointer function;
-        const int maxNumInputs = std::numeric_limits<int>::max ( );
+        const int numInputs = variableNumInputs;
     };
 
     public:
 
     stl::vector<frozen::string> functionNames;
     stl::vector<Pointer> function;
-    stl::vector<int> maxNumInputs;
+    stl::vector<int> numInputs;
 
     int numFunctions = 0;
 
@@ -199,7 +201,7 @@ struct FunctionSet {
             archive_ ( name );
             auto [ f, n ] { m_function_set.at ( functionNames.emplace_back ( name.data ( ), name.size ( ) ) ) };
             function.push_back ( f );
-            maxNumInputs.push_back ( n );
+            numInputs.push_back ( n );
         }
     }
 
@@ -211,7 +213,7 @@ struct FunctionSet {
     void addPresetNodeFunction ( frozen::string && functionName_ ) {
         auto [ f, n ] { m_function_set.at ( functionNames.emplace_back ( std::move ( functionName_ ) ) ) };
         function.push_back ( f );
-        maxNumInputs.push_back ( n );
+        numInputs.push_back ( n );
         ++numFunctions;
     }
 
@@ -219,14 +221,14 @@ struct FunctionSet {
     void addCustomNodeFunction ( const frozen::string & functionName_, PointerType function_, int maxNumInputs_ ) {
         functionNames.push_back ( functionName_ );
         function.emplace_back ( function_ );
-        maxNumInputs.push_back ( maxNumInputs_ );
+        numInputs.push_back ( maxNumInputs_ );
         ++numFunctions;
     }
 
     void clear ( ) noexcept {
         functionNames.clear ( );
         function.clear ( );
-        maxNumInputs.clear ( );
+        numInputs.clear ( );
         numFunctions = 0;
     }
 
@@ -324,10 +326,9 @@ template<typename Real> [[ nodiscard ]] Real f_add ( const stl::vector<Real> & i
     return std::accumulate ( std::begin ( inputs_ ), std::end ( inputs_ ), Real { 0 }, std::plus<Real> ( ) );
 }
 
-// Node function sub. Returns the first input minus all remaining inputs_.
+// Node function sub. Returns the first input minus minus the second input.
 template<typename Real> [[ nodiscard ]] Real f_sub ( const stl::vector<Real> & inputs_ ) noexcept {
     return inputs_ [ 0 ] - inputs_ [ 1 ];
-    // return std::accumulate ( std::next ( std::begin ( inputs_ ) ), std::end ( inputs_ ), inputs_ [ 0 ], std::minus<Real> ( ) );
 }
 
 // Node function mul. Returns the multiplication of all the inputs_.
@@ -338,33 +339,24 @@ template<typename Real> [[ nodiscard ]] Real f_mul ( const stl::vector<Real> & i
 // Node function div. Returns the first input divided by the second input divided by
 // the third input etc.
 template<typename Real> [[ nodiscard ]] Real f_divide ( const stl::vector<Real> & inputs_ ) noexcept {
-    if ( inputs_ [ 1 ] )
-        return inputs_ [ 0 ] / inputs_ [ 1 ];
-    return Real { 0 };
-    // return std::accumulate ( std::next ( std::begin ( inputs_ ) ), std::end ( inputs_ ), inputs_ [ 0 ], std::divides<Real> ( ) );
+    return Real { 0 } != inputs_ [ 1 ] ? inputs_ [ 0 ] / inputs_ [ 1 ] : Real { 0 };
 }
 
 // Node function reci. Returns the reciproke of the first input.
 template<typename Real> [[ nodiscard ]] Real f_reciprocal ( const stl::vector<Real> & inputs_ ) noexcept {
-    if ( inputs_ [ 0 ] )
-        return Real { 1 } / inputs_ [ 0 ];
-    return Real { 0 };
+    return Real { 0 } != inputs_ [ 0 ] ? Real { 1 } / inputs_ [ 0 ] : Real { 0 };
 }
 
 // Node function idiv.Returns the first input (cast to int) divided by the second
 // input (cast to int). This function allows for integer arithmatic.
 template<typename Real> [[ nodiscard ]] Real f_idiv ( const stl::vector<Real> & inputs_ ) noexcept {
-    if ( 0 != static_cast<int> ( inputs_ [ 1 ] ) )
-        return static_cast< Real > ( static_cast<int> ( inputs_ [ 0 ] ) / static_cast<int> ( inputs_ [ 1 ] ) );
-    return Real { 0 };
+    return 0 != static_cast<int> ( inputs_ [ 1 ] ) ? static_cast< Real > ( static_cast<int> ( inputs_ [ 0 ] ) / static_cast<int> ( inputs_ [ 1 ] ) ) : Real { 0 };
 }
 
 // Node function irem. Returns the remainder of the first input (cast to int) divided
 // by the second input (cast to int). This function allows for integer arithmatic.
 template<typename Real> [[ nodiscard ]] Real f_irem ( const stl::vector<Real> & inputs_ ) noexcept {
-    if ( 0 != static_cast<int> ( inputs_ [ 1 ] ) )
-        return static_cast< Real > ( static_cast<int> ( inputs_ [ 0 ] ) % static_cast<int> ( inputs_ [ 1 ] ) );
-    return Real { 0 };
+    return 0 != static_cast<int> ( inputs_ [ 1 ] ) ? static_cast< Real > ( static_cast<int> ( inputs_ [ 0 ] ) % static_cast<int> ( inputs_ [ 1 ] ) ) : Real { 0 };
 }
 
 // Node function abs. Returns the negation of the first input. This is useful if one
@@ -381,7 +373,7 @@ template<typename Real> [[ nodiscard ]] Real f_absolute ( const stl::vector<Real
 
 // Node function sqrt. Returns the square root of the first input.
 template<typename Real> [[ nodiscard ]] Real f_squareRoot ( const stl::vector<Real> & inputs_ ) noexcept {
-    return std::sqrt ( inputs_ [ 0 ] );
+    return inputs_ [ 0 ] < Real { 0 } ? -std::sqrt ( std::abs ( inputs_ [ 0 ] ) ) : std::sqrt ( inputs_ [ 0 ] );
 }
 
 // Node function sqr. Returns the square of the first input.
@@ -394,9 +386,9 @@ template<typename Real> [[ nodiscard ]] Real f_cube ( const stl::vector<Real> & 
     return inputs_ [ 0 ] * inputs_ [ 0 ] * inputs_ [ 0 ];
 }
 
-// Node function power. Returns the first output to the power of the second.
+// Node function pow. Returns the first output to the power of the second.
 template<typename Real> [[ nodiscard ]] Real f_power ( const stl::vector<Real> & inputs_ ) noexcept {
-    return std::pow ( inputs_ [ 0 ], inputs_ [ 1 ] );
+    return inputs_ [ 0 ] < Real { 0 } ? -std::pow ( std::abs ( inputs_ [ 0 ] ), inputs_ [ 1 ] ) : std::pow ( inputs_ [ 0 ], inputs_ [ 1 ] );
 }
 
 // Node function exp. Returns the exponential of the first input.
@@ -411,12 +403,12 @@ template<typename Real> [[ nodiscard ]] Real f_exponential2 ( const stl::vector<
 
 // Node function log. Returns the natural logarith of the first input.
 template<typename Real> [[ nodiscard ]] Real f_logarithm ( const stl::vector<Real> & inputs_ ) noexcept {
-    return std::log ( inputs_ [ 0 ] );
+    return inputs_ [ 0 ] < Real { 0 } ? -std::log ( std::abs ( inputs_ [ 0 ] ) ) : std::log ( inputs_ [ 0 ] );
 }
 
 // Node function log2. Returns the  log base 2 of the first input.
 template<typename Real> [[ nodiscard ]] Real f_logarithm2 ( const stl::vector<Real> & inputs_ ) noexcept {
-    return std::log2 ( inputs_ [ 0 ] );
+    return inputs_ [ 0 ] < Real { 0 } ? -std::log2 ( std::abs ( inputs_ [ 0 ] ) ) : std::log2 ( inputs_ [ 0 ] );
 }
 
 // Node function sin. Returns the sine of the first input.
@@ -436,12 +428,14 @@ template<typename Real> [[ nodiscard ]] Real f_tan ( const stl::vector<Real> & i
 
 // Node function asin. Returns the arc sine of the first input.
 template<typename Real> [[ nodiscard ]] Real f_asin ( const stl::vector<Real> & inputs_ ) noexcept {
-    return std::asin ( inputs_ [ 0 ] );
+    Real i = Real { 0 };
+    return std::asin ( std::modf ( inputs_ [ 0 ], & i ) );
 }
 
 // Node function acos. Returns the arc cosine of the first input.
 template<typename Real> [[ nodiscard ]] Real f_acos ( const stl::vector<Real> & inputs_ ) noexcept {
-    return std::acos ( inputs_ [ 0 ] );
+    Real i = Real { 0 };
+    return std::acos ( std::modf ( inputs_ [ 0 ], & i ) );
 }
 
 // Node function atan. Returns the arc tangent of the first input.
