@@ -137,14 +137,14 @@ int main ( ) {
 
     float r = 0.0f;
 
-    for ( int i = 0; i < 10'000'000; ++i ) {
+    for ( int i = 0; i < 100'000'000; ++i ) {
         r += timeRandomFunction ( stats );
     }
 
     std::cout << r << nl;
 
-    auto min_s = std::min_element ( std::begin ( stats ), std::end ( stats ), [ ] ( const FunctionStats & a, const FunctionStats b ) { return a.time < b.time; } );
-    std::for_each ( std::begin ( stats ), std::end ( stats ), [ & min_s ] ( FunctionStats & s ) { s.time /= min_s->time; } );
+    //auto min_s = std::min_element ( std::begin ( stats ), std::end ( stats ), [ ] ( const FunctionStats & a, const FunctionStats b ) { return a.time < b.time; } );
+    //std::for_each ( std::begin ( stats ), std::end ( stats ), [ & min_s ] ( FunctionStats & s ) { s.time /= min_s->time; } );
 
     std::cout << stats << nl;
 

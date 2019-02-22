@@ -172,6 +172,7 @@ struct FunctionSet {
 
     struct FunctionData {
         const Pointer function;
+        const Real cost;
         const int numInputs = variableNumInputs;
     };
 
@@ -179,6 +180,7 @@ struct FunctionSet {
 
     stl::vector<frozen::string> functionNames;
     stl::vector<Pointer> function;
+    stl::vector<Real> cost;
     stl::vector<int> numInputs;
 
     int numFunctions = 0;
@@ -199,8 +201,9 @@ struct FunctionSet {
         for ( int i = 0; i < numFunctions; ++i ) {
             name.clear ( );
             archive_ ( name );
-            auto [ f, n ] { m_function_set.at ( functionNames.emplace_back ( name.data ( ), name.size ( ) ) ) };
+            auto [ f, c, n ] { m_function_set.at ( functionNames.emplace_back ( name.data ( ), name.size ( ) ) ) };
             function.push_back ( f );
+            cost.push_back ( c );
             numInputs.push_back ( n );
         }
     }
@@ -211,23 +214,26 @@ struct FunctionSet {
     }
 
     void addPresetNodeFunction ( frozen::string && functionName_ ) {
-        auto [ f, n ] { m_function_set.at ( functionNames.emplace_back ( std::move ( functionName_ ) ) ) };
+        auto [ f, c, n ] { m_function_set.at ( functionNames.emplace_back ( std::move ( functionName_ ) ) ) };
         function.push_back ( f );
+        cost.push_back ( c );
         numInputs.push_back ( n );
         ++numFunctions;
     }
 
     template<typename PointerType>
-    void addCustomNodeFunction ( const frozen::string & functionName_, PointerType function_, int maxNumInputs_ ) {
+    void addCustomNodeFunction ( const frozen::string & functionName_, PointerType function_, const Real cost_, const int numInputs_ ) {
         functionNames.push_back ( functionName_ );
         function.emplace_back ( function_ );
-        numInputs.push_back ( maxNumInputs_ );
+        cost.push_back ( cost_ );
+        numInputs.push_back ( numInputs_ );
         ++numFunctions;
     }
 
     void clear ( ) noexcept {
         functionNames.clear ( );
         function.clear ( );
+        cost.clear ( );
         numInputs.clear ( );
         numFunctions = 0;
     }
@@ -260,53 +266,53 @@ struct FunctionSet {
     // private:
 
     static constexpr frozen::unordered_map<frozen::string, FunctionData, 47> m_function_set {
-        { "0", { function::f_0, 0 } },
-        { "1", { function::f_1, 0 } },
-        { "10", { function::f_10, 0 } },
-        { "16", { function::f_16, 0 } },
-        { "2", { function::f_2, 0 } },
-        { "3", { function::f_3, 0 } },
-        { "4", { function::f_4, 0 } },
-        { "5", { function::f_5, 0 } },
-        { "6", { function::f_6, 0 } },
-        { "7", { function::f_7, 0 } },
-        { "8", { function::f_8, 0 } },
-        { "9", { function::f_9, 0 } },
-        { "abs", { function::f_absolute, 1 } },
-        { "acos", { function::f_acos, 1 } },
-        { "add", { function::f_add } },
-        { "and", { function::f_and } },
-        { "asin", { function::f_asin, 1 } },
-        { "atan", { function::f_atan, 1 } },
-        { "bern", { function::f_randBernoulli, 0 } },
-        { "cos", { function::f_cos, 1 } },
-        { "cube", { function::f_cube, 1 } },
-        { "div", { function::f_divide, 2 } },
-        { "e", { function::f_Euler, 0 } },
-        { "exp", { function::f_exponential, 1 } },
-        { "exp2", { function::f_exponential2, 1 } },
-        { "idiv", { function::f_idiv, 2 } },
-        { "irem", { function::f_irem, 2 } },
-        { "log", { function::f_logarithm, 1 } },
-        { "log2", { function::f_logarithm2, 1 } },
-        { "mul", { function::f_mul } },
-        { "nand", { function::f_nand } },
-        { "neg", { function::f_negate, 1 } },
-        { "nor", { function::f_nor } },
-        { "not", { function::f_not, 1 } },
-        { "or", { function::f_or } },
-        { "pi", { function::f_Pi, 0 } },
-        { "pow", { function::f_power, 2 } },
-        { "rand", { function::f_randFloat, 0 } },
-        { "reci", { function::f_reciprocal, 1 } },
-        { "sin", { function::f_sin, 1 } },
-        { "sqr", { function::f_square, 1 } },
-        { "sqrt", { function::f_squareRoot, 1 } },
-        { "sub", { function::f_sub, 2 } },
-        { "tan", { function::f_tan, 1 } },
-        { "wire", { function::f_wire, 1 } },
-        { "xnor", { function::f_xnor } },
-        { "xor", { function::f_xor } }
+        { "0", { function::f_0, 3, 0 } },
+        { "1", { function::f_1, 3, 0 } },
+        { "10", { function::f_10, 3, 0 } },
+        { "16", { function::f_16, 3, 0 } },
+        { "2", { function::f_2, 3, 0 } },
+        { "3", { function::f_3, 3, 0 } },
+        { "4", { function::f_4, 3, 0 } },
+        { "5", { function::f_5, 3, 0 } },
+        { "6", { function::f_6, 3, 0 } },
+        { "7", { function::f_7, 3, 0 } },
+        { "8", { function::f_8, 3, 0 } },
+        { "9", { function::f_9, 3, 0 } },
+        { "abs", { function::f_absolute, 3, 1 } },
+        { "acos", { function::f_acos, 20, 1 } },
+        { "add", { function::f_add, 9 }  },
+        { "and", { function::f_and, 6 } },
+        { "asin", { function::f_asin, 20, 1 } },
+        { "atan", { function::f_atan, 13, 1 } },
+        { "bern", { function::f_randBernoulli, 8, 0 } },
+        { "cos", { function::f_cos, 10, 1 } },
+        { "cube", { function::f_cube, 3, 1 } },
+        { "div", { function::f_divide, 4, 2 } },
+        { "e", { function::f_Euler, 3, 0 } },
+        { "exp", { function::f_exponential, 11, 1 } },
+        { "exp2", { function::f_exponential2, 82, 1 } },
+        { "idiv", { function::f_idiv, 4, 2 } },
+        { "irem", { function::f_irem, 4, 2 } },
+        { "log", { function::f_logarithm, 14, 1 } },
+        { "log2", { function::f_logarithm2, 48, 1 } },
+        { "mul", { function::f_mul, 10 } },
+        { "nand", { function::f_nand, 6 } },
+        { "neg", { function::f_negate, 4, 1 } },
+        { "nor", { function::f_nor, 4 } },
+        { "not", { function::f_not, 4, 1 } },
+        { "or", { function::f_or, 4 } },
+        { "pi", { function::f_Pi, 3, 0 } },
+        { "pow", { function::f_power, 28, 2 } },
+        { "rand", { function::f_randFloat, 16, 0 } },
+        { "reci", { function::f_reciprocal, 4, 1 } },
+        { "sin", { function::f_sin, 11, 1 } },
+        { "sqr", { function::f_square, 3, 1 } },
+        { "sqrt", { function::f_squareRoot, 4, 1 } },
+        { "sub", { function::f_sub, 3, 2 } },
+        { "tan", { function::f_tan, 11, 1 } },
+        { "wire", { function::f_wire, 3, 1 } },
+        { "xnor", { function::f_xnor, 6 } },
+        { "xor", { function::f_xor, 8 } }
     };
 };
 
