@@ -76,17 +76,33 @@ Stream & operator << ( Stream & out_, const chr & v_ ) noexcept {
     return out_;
 }
 
-#include <frozen/unordered_set.h>
+
+#include <plf/plf_nanotimer.h>
+#include "../include/random.hpp"
+
+struct FunctionStats {
+
+    double time = 0.0;
+    int numExecutions = 0;
+};
+
+std::array<FunctionStats, cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( )> stats;
+
+double timeRandomFunction ( ) noexcept {
+    const auto f = cgp::functionSet.builtinFunction ( cgp::Rng::randInt ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) ) );
+
+    std::cout << f.maxNumInputs << nl;
+
+    return 0.0;
+}
+
+
 
 int main ( ) {
 
-    cgp::Data<float> data ( "../data/", "table.data" );
+    const auto f = timeRandomFunction ( );
 
-    for ( const auto & r : data ) {
-        std::cout << r.input << r.output << nl;
-    }
-
-    std::cout << std::numeric_limits<std::uint64_t>::max ( ) << nl;
+    std::cout << f << nl;
 
     return EXIT_SUCCESS;
 }

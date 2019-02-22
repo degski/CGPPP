@@ -33,6 +33,14 @@
 #include <sax/prng.hpp>
 #include <sax/uniform_int_distribution.hpp>
 
+#if defined ( _DEBUG )
+#define RANDOM 0
+#else
+#define RANDOM 1
+#endif
+
+
+namespace cgp {
 
 struct Rng {
 
@@ -50,4 +58,9 @@ struct Rng {
 };
 
 
-thread_local sax::Rng Rng::gen ( _DEBUG ? sax::fixed_seed ( ) : sax::os_seed ( ) );
+thread_local sax::Rng Rng::gen ( RANDOM ? sax::os_seed ( ) : sax::fixed_seed ( ) );
+
+}
+
+
+#undef RANDOM

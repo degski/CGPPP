@@ -197,7 +197,7 @@ struct FunctionSet {
         for ( int i = 0; i < numFunctions; ++i ) {
             name.clear ( );
             archive_ ( name );
-            auto [ f, n ] { functionSet.at ( functionNames.emplace_back ( name.data ( ), name.size ( ) ) ) };
+            auto [ f, n ] { m_function_set.at ( functionNames.emplace_back ( name.data ( ), name.size ( ) ) ) };
             function.push_back ( f );
             maxNumInputs.push_back ( n );
         }
@@ -209,7 +209,7 @@ struct FunctionSet {
     }
 
     void addPresetNodeFunction ( frozen::string && functionName_ ) {
-        auto [ f, n ] { functionSet.at ( functionNames.emplace_back ( std::move ( functionName_ ) ) ) };
+        auto [ f, n ] { m_function_set.at ( functionNames.emplace_back ( std::move ( functionName_ ) ) ) };
         function.push_back ( f );
         maxNumInputs.push_back ( n );
         ++numFunctions;
@@ -239,18 +239,22 @@ struct FunctionSet {
 
     static constexpr void printBuiltinFunctionSet ( ) noexcept {
         std::cout << "Built-in Function Set:";
-        for ( const auto & name : functionSet )
+        for ( const auto & name : m_function_set )
             std::cout << ' ' << name.first.data ( );
-        std::cout << " (" << functionSet.size ( ) << ')' << nl;
+        std::cout << " (" << m_function_set.size ( ) << ')' << nl;
     }
 
-    [[ nodiscard ]] static constexpr std::size_t sizeBuiltinFunctionSet ( ) noexcept {
-        return functionSet.size ( );
+    [[ nodiscard ]] static constexpr int sizeBuiltinFunctionSet ( ) noexcept {
+        return static_cast<int> ( m_function_set.size ( ) );
     }
 
-    private:
+    [[ nodiscard ]] static constexpr const FunctionData & builtinFunction ( const int i_ ) noexcept {
+        return m_function_set.begin ( ) [ i_ ].second;
+    }
 
-    static constexpr frozen::unordered_map<frozen::string, FunctionData, 47> functionSet {
+    // private:
+
+    static constexpr frozen::unordered_map<frozen::string, FunctionData, 47> m_function_set {
         { "0", { function::f_0, 0 } },
         { "1", { function::f_1, 0 } },
         { "10", { function::f_10, 0 } },
@@ -307,7 +311,7 @@ sax::singleton<FunctionSet<Float>> singletonFunctionSet;
 }
 
 
-auto functionSet = [ ] { return detail::singletonFunctionSet.instance ( ); } ( );
+const auto functionSet = [ ] { return detail::singletonFunctionSet.instance ( ); } ( );
 
 
 namespace function {
