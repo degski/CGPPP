@@ -76,6 +76,7 @@ Stream & operator << ( Stream & out_, const chr & v_ ) noexcept {
     return out_;
 }
 
+#include <frozen/unordered_set.h>
 
 int main ( ) {
 
