@@ -82,27 +82,65 @@ Stream & operator << ( Stream & out_, const chr & v_ ) noexcept {
 
 struct FunctionStats {
 
+    std::string name;
     double time = 0.0;
     int numExecutions = 0;
+
+    template<typename Stream>
+    friend Stream & operator << ( Stream & out_, const FunctionStats & v_ ) noexcept {
+        out_ << "<\"" << v_.name << "\" " << static_cast<int> ( v_.time ) << ' ' << v_.numExecutions << '>' << nl;
+        return out_;
+    }
 };
 
-std::array<FunctionStats, cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( )> stats;
 
-double timeRandomFunction ( ) noexcept {
-    const auto f = cgp::functionSet.builtinFunction ( cgp::Rng::randInt ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) ) );
+stl::vector<float> getInputs ( const int max_ ) noexcept {
+    const int size = std::min ( ( std::geometric_distribution<> ( ) ( cgp::Rng::gen ) + 1 ), max_ );
+    stl::vector<float> v ( size );
+    std::generate ( std::begin ( v ), std::end ( v ), [ ] { return std::uniform_real_distribution<float> ( -1.0f, 1.0f ) ( cgp::Rng::gen ); } );
+    return v;
+}
 
-    std::cout << f.maxNumInputs << nl;
+float timeRandomFunction ( stl::vector<FunctionStats> & stats_ ) noexcept {
+    const int i = cgp::Rng::randInt ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) );
+    const auto f = cgp::FunctionSet<float>::builtinFunction ( i );
 
-    return 0.0;
+    const auto input = getInputs ( f.maxNumInputs );
+
+    float r = 0.0f;
+
+    static plf::nanotimer timer;
+
+    timer.start ( );
+    for ( int i = 0; i < 1'000; ++i ) {
+        r += f.function ( input );
+    }
+    const double elapsed = timer.get_elapsed_us ( );
+
+    ++stats_ [ i ].numExecutions;
+    stats_ [ i ].time += ( elapsed - stats_ [ i ].time ) / stats_ [ i ].numExecutions;
+
+    return r / 100.0f;
 }
 
 
 
 int main ( ) {
 
-    const auto f = timeRandomFunction ( );
+    stl::vector<FunctionStats> stats ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) );
 
-    std::cout << f << nl;
+    for ( int i = 0; i < cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ); ++i )
+        stats [ i ].name = cgp::FunctionSet<float>::builtinFunctionName ( i ).data ( );
+
+    float r = 0.0f;
+
+    for ( int i = 0; i < 1'000; ++i ) {
+        r += timeRandomFunction ( stats );
+    }
+
+    std::cout << r << nl;
+
+    std::cout << stats << nl;
 
     return EXIT_SUCCESS;
 }

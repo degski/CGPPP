@@ -248,6 +248,9 @@ struct FunctionSet {
         return static_cast<int> ( m_function_set.size ( ) );
     }
 
+    [[ nodiscard ]] static constexpr frozen::string builtinFunctionName ( const int i_ ) noexcept {
+        return m_function_set.begin ( ) [ i_ ].first;
+    }
     [[ nodiscard ]] static constexpr const FunctionData & builtinFunction ( const int i_ ) noexcept {
         return m_function_set.begin ( ) [ i_ ].second;
     }
