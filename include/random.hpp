@@ -49,4 +49,8 @@ struct Rng {
     }
 };
 
+#if defined ( _DEBUG )
+thread_local sax::Rng Rng::gen ( sax::fixed_seed ( ) );
+#else
 thread_local sax::Rng Rng::gen ( sax::os_seed ( ) );
+#endif
