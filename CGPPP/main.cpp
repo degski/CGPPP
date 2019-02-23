@@ -84,15 +84,15 @@ struct FunctionStats {
 
     std::string name;
     double time = 0.0;
-    int numExecutions = 0;
+    int n = 0;
 
     void update ( const double elapsed_time_ ) noexcept {
-        time += ( elapsed_time_ - time ) / ++numExecutions;
+        time += ( elapsed_time_ - time ) / ++n;
     }
 
     template<typename Stream>
     friend Stream & operator << ( Stream & out_, const FunctionStats & v_ ) noexcept {
-        out_ << "<\"" << v_.name << "\" " << static_cast<int> ( v_.time ) /* << ' ' << v_.numExecutions */ << '>' << nl;
+        out_ << "<\"" << v_.name << "\" " << static_cast<int> ( v_.time ) << '>' << nl;
         return out_;
     }
 };
@@ -121,7 +121,7 @@ float timeRandomFunction ( stl::vector<FunctionStats> & stats_ ) noexcept {
     for ( int i = 0; i < 1'000; ++i ) {
         r += f.function ( input );
     }
-    stats_ [ i ].update ( timer.get_elapsed_us ( ) );
+    stats_ [ i ].update ( timer.get_elapsed_ns ( ) );
 
     return r / 1000.0f;
 }
