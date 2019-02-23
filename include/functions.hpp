@@ -42,17 +42,13 @@
 #include <type_traits>
 #include <vector>
 
-#include <absl/container/fixed_array.h>
-#include <absl/container/inlined_vector.h>
-
 #include <cereal/cereal.hpp>
 #include <cereal/access.hpp>
 
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
 
-// https://github.com/degski/Sax/
-
+#include <plf/plf_nanotimer.h>
 
 #include <sax/singleton.hpp>
 #include <sax/stl.hpp>
@@ -599,6 +595,63 @@ template<typename Real> [[ nodiscard ]] Real f_wire ( const stl::vector<Real> & 
 }
 
 } // namespace function
+
+
+
+struct FunctionStats {
+
+    std::string name;
+    double time = 0.0;
+    int n = 0;
+
+    void update ( const double elapsed_time_ ) noexcept {
+        time += ( elapsed_time_ - time ) / ++n;
+    }
+
+    template<typename Stream>
+    friend Stream & operator << ( Stream & out_, const FunctionStats & v_ ) noexcept {
+        const int arity = cgp::FunctionSet<float>::m_function_set.at ( frozen::string { v_.name.data ( ), v_.name.length ( ) } ).arity;
+        if ( cgp::FunctionSet<float>::variableNumInputs == arity )
+            out_ << "       { \"" << v_.name << "\", { function::f_" << v_.name << ", " << std::fixed << std::setprecision ( 1 ) << ( v_.time / 1000.0 ) << " } }," << nl;
+        else
+            out_ << "       { \"" << v_.name << "\", { function::f_" << v_.name << ", " << std::fixed << std::setprecision ( 1 ) << ( v_.time / 1000.0 ) << ", " << arity << " } }," << nl;
+        return out_;
+    }
+};
+
+
+stl::vector<float> getInputs ( const int arity_ ) noexcept {
+    const int arity = arity_ == cgp::FunctionSet<float>::variableNumInputs ? std::geometric_distribution<> ( ) ( cgp::Rng::gen ) + 2 : arity_;
+    stl::vector<float> v ( arity );
+    std::generate ( std::begin ( v ), std::end ( v ), [ ] { return std::uniform_real_distribution<float> ( -1.0f, 1.0f ) ( cgp::Rng::gen ); } );
+    return v;
+}
+
+
+float timeRandomFunction ( stl::vector<FunctionStats> & stats_ ) noexcept {
+    const int i = cgp::Rng::randInt ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) );
+    const auto f = cgp::FunctionSet<float>::builtinFunction ( i );
+    const auto input = getInputs ( f.arity );
+    // std::cout << cgp::FunctionSet<float>::builtinLabel ( i ).data ( ) << ' ' << input.size ( ) << ' ' << input << " > " << f.function ( input ) << nl;
+    float r = 0.0f;
+    static plf::nanotimer timer;
+    timer.start ( );
+    for ( int i = 0; i < 1'000; ++i )
+        r += f.function ( input );
+    stats_ [ i ].update ( timer.get_elapsed_ns ( ) );
+    return r / 1000.0f;
+}
+
+
+void generateCostsTable ( ) {
+    stl::vector<FunctionStats> stats ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) );
+    for ( int i = 0; i < cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ); ++i )
+        stats [ i ].name = cgp::FunctionSet<float>::builtinLabel ( i ).data ( );
+    float r = 0.0f;
+    for ( int i = 0; i < 10'000'000; ++i )
+        r += timeRandomFunction ( stats );
+    std::cout << stats << nl;
+}
 
 
 } // namespace cgp
