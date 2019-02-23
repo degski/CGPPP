@@ -215,8 +215,8 @@ struct FunctionSet {
         ( addPresetNodeFunction ( args_ ), ... );
     }
 
-    void addPresetNodeFunction ( frozen::string && functionName_ ) {
-        auto [ f, c, a ] { m_function_set.at ( label.emplace_back ( std::move ( functionName_ ) ) ) };
+    void addPresetNodeFunction ( frozen::string && label_ ) {
+        auto [ f, c, a ] { m_function_set.at ( label.emplace_back ( std::move ( label_ ) ) ) };
         function.push_back ( f );
         cost.push_back ( c );
         arity.push_back ( a );
@@ -224,11 +224,11 @@ struct FunctionSet {
     }
 
     template<typename PointerType>
-    void addCustomNodeFunction ( const frozen::string & functionName_, PointerType function_, const Real cost_, const int numInputs_ ) {
-        label.push_back ( functionName_ );
+    void addCustomNodeFunction ( const frozen::string & label_, PointerType function_, const Real cost_, const int arity_ ) {
+        label.push_back ( label_ );
         function.emplace_back ( function_ );
         cost.push_back ( cost_ );
-        arity.push_back ( numInputs_ );
+        arity.push_back ( arity_ );
         ++size;
     }
 
@@ -258,7 +258,7 @@ struct FunctionSet {
         return static_cast<int> ( m_function_set.size ( ) );
     }
 
-    [[ nodiscard ]] static constexpr frozen::string builtinLabel ( const int i_ ) noexcept {
+    [[ nodiscard ]] static constexpr const frozen::string & builtinLabel ( const int i_ ) noexcept {
         return m_function_set.begin ( ) [ i_ ].first;
     }
     [[ nodiscard ]] static constexpr const FunctionData & builtinFunction ( const int i_ ) noexcept {
