@@ -40,6 +40,7 @@
 #include <iterator>
 #include <limits>
 #include <map>
+#include <memory>
 #include <numeric>
 #include <random>
 #include <span>
@@ -75,8 +76,6 @@ namespace fs = std::filesystem;
 
 namespace cgp {
 
-template<typename T>
-using NodeArray = absl::FixedArray<T>;
 
 // Forward declarations.
 
@@ -93,6 +92,7 @@ template<typename Real>
 using ChromosomePtr = std::unique_ptr<Chromosome<Real>>;
 template<typename Real>
 using ChromosomePtrVec = stl::vector<ChromosomePtr<Real>>;
+
 
 template<typename Real>
 void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept;
