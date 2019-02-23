@@ -146,10 +146,10 @@ struct Parameters {
         mu { 1 },
         lambda { 4 },
         evolutionaryStrategy { '+' },
-        mutationRate { Real { 0.05 } },
+        mutationRate { 0.05 },
         mutationDistribution { mutationRate },
-        recurrentConnectionProbability { Real { 0 } },
-        targetFitness { Real { 0 } },
+        recurrentConnectionProbability { 0 },
+        targetFitness { 0 },
         updateFrequency { 1 },
         shortcutConnections { true },
         mutationType { probabilisticMutation },
@@ -295,7 +295,7 @@ struct Node {
     int function;
     bool active;
     Real output;
-    int actArity;
+    int arity;
 
     Node ( ) = delete;
     Node ( const Node & ) = default;
@@ -304,11 +304,24 @@ struct Node {
 
         function { params.getRandomFunction ( ) },
         active { true },
-        output { Real { 0 } },
-        actArity { params.arity } {
+        output { 0 },
+        arity { getArity ( ) } {
 
         inputs.reserve ( params.arity );
         std::generate_n ( sax::back_emplacer ( inputs ), params.arity, [ nodePosition_ ] ( ) noexcept { return params.getRandomNodeInput ( nodePosition_ ); } );
+    }
+
+    [[ nodiscard ]] int getArity ( ) const noexcept {
+        return std::min ( functionSet.arity [ function ], params.arity );
+    }
+
+    void activate ( ) noexcept {
+        active = true;
+        arity = getArity ( );
+    }
+
+    void deactivate ( ) noexcept {
+        active = false;
     }
 
     [[ maybe_unused ]] Node & operator = ( const Node & ) = default;
@@ -323,14 +336,14 @@ struct Node {
     }
 
     void reset ( ) noexcept {
-        output = Real { 0 };
+        output = 0;
     }
 
     friend class cereal::access;
 
     template<typename Archive>
     void serialize ( Archive & archive_ ) {
-        archive_ ( inputs, function, active, output, actArity );
+        archive_ ( inputs, function, active, output, arity );
     }
 };
 
@@ -342,7 +355,6 @@ struct Chromosome {
     stl::vector<int> outputNodes;
     stl::vector<int> activeNodes;
     stl::vector<Real> outputValues;
-    stl::vector<Real> nodeInputsHold;
 
     Real fitness;
     int generation;
@@ -377,8 +389,7 @@ struct Chromosome {
     Chromosome ( ) :
 
         outputValues ( params.numOutputs ),
-        nodeInputsHold ( params.arity ),
-        fitness { Real { -1 } },
+        fitness { -1 },
         generation { 0 } {
 
         nodes.reserve ( params.numNodes );
@@ -418,34 +429,24 @@ struct Chromosome {
         return nodes != rhs_.nodes or outputNodes != rhs_.outputNodes;
     }
 
-    // Executes the given chromosome.
+    // Executes this chromosome.
     template<typename Container>
     void execute ( const Container & inputs_ ) noexcept {
-        // For all of the active nodes.
         for ( const int currentActiveNode : activeNodes ) {
-            const int nodeArity = nodes [ currentActiveNode ].actArity;
-            // For each of the active nodes inputs.
-            for ( int i = 0; i < nodeArity; ++i ) {
-                // Gather the nodes input locations.
-                const int nodeInputLocation = nodes [ currentActiveNode ].inputs [ i ];
-                nodeInputsHold [ i ] = nodeInputLocation < params.numInputs ? inputs_ [ nodeInputLocation ] : nodes [ nodeInputLocation - params.numInputs ].output;
-            }
-            // Get the functionality of the active node under evaluation and
-            // calculate the output of the active node under evaluation.
-            nodes [ currentActiveNode ].output = functionSet.function [ nodes [ currentActiveNode ].function ] ( nodeInputsHold );
-            // Deal with Real's becoming NAN.
-            if ( std::isnan ( nodes [ currentActiveNode ].output ) ) {
-                nodes [ currentActiveNode ].output = Real { 0 };
-            }
-            // Prevent Real's form going to inf and -inf.
-            else if ( std::isinf ( nodes [ currentActiveNode ].output )) {
-                nodes [ currentActiveNode ].output = nodes [ currentActiveNode ].output > Real { 0 } ? std::numeric_limits<Real>::max ( ) : std::numeric_limits<Real>::min ( );
-            }
+            Node<Real> & node = nodes [ currentActiveNode ];
+            static thread_local stl::vector<Real> in;
+            in.clear ( );
+            std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ & inputs_, this ] ( const int input ) noexcept {
+                in.push_back ( input < params.numInputs ? inputs_ [ input ] : nodes [ input - params.numInputs ].output );
+            } );
+            node.output = functionSet.function [ node.function ] ( in );
+            if ( std::isnan ( node.output ) )
+                node.output = 0;
+            else if ( std::isinf ( node.output ) )
+                node.output = node.output > Real { 0 } ? std::numeric_limits<Real>::max ( ) : std::numeric_limits<Real>::min ( );
         }
-        // Set the chromosome outputs.
-        for ( int i = 0; i < params.numOutputs; ++i ) {
+        for ( int i = 0; i < params.numOutputs; ++i )
             outputValues [ i ] = outputNodes [ i ] < params.numInputs ? inputs_ [ outputNodes [ i ] ] : nodes [ outputNodes [ i ] - params.numInputs ].output;
-        }
     }
 
     [[ nodiscard ]] std::unique_ptr<Chromosome> mutate ( ) const noexcept {
@@ -462,10 +463,10 @@ struct Chromosome {
         fitness = params.fitnessFunction ( * this, data_set_ );
     }
 
-    // Reset the active nodes in chromosome.
-    void resetActiveNodes ( ) noexcept {
+    // Reset the active nodes.
+    void clearActiveNodes ( ) noexcept {
         activeNodes.clear ( );
-        std::for_each ( std::begin ( nodes ), std::end ( nodes ), [ ] ( auto & node ) noexcept { node.active = false; } );
+        std::for_each ( std::begin ( nodes ), std::end ( nodes ), [ ] ( auto & node ) noexcept { node.deactivate ( ); } );
     }
 
      // Used by setActiveNodes to recursively search for active nodes.
@@ -478,50 +479,38 @@ struct Chromosome {
             return;
         // Log the node as active.
         activeNodes.push_back ( nodeIndex_ );
-        node.active = true;
-        node.actArity = std::min ( functionSet.arity [ node.function ], params.arity );
-        std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.actArity, [ this ] ( const auto index ) noexcept { recursivelySetActiveNodes ( index ); } );
+        node.activate ( );
+        std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ this ] ( const int index ) noexcept { recursivelySetActiveNodes ( index ); } );
     }
 
-    // Set the active nodes in chromosome.
+    // Set the active nodes.
     void setActiveNodes ( ) noexcept {
-        resetActiveNodes ( );
-        std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( const auto index ) noexcept { recursivelySetActiveNodes ( index ); } );
+        clearActiveNodes ( );
+        std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( const int index ) noexcept { recursivelySetActiveNodes ( index ); } );
         std::sort ( std::begin ( activeNodes ), std::end ( activeNodes ) );
     }
 
-    // Output.
+    Real cost ( ) const noexcept {
+        return std::accumulate ( std::begin ( nodes ), std::end ( nodes ), Real { 0 }, [ ] ( const auto & node ) { return functionSet.cost [ node.function ]; } );
+    }
 
-    void print ( ) noexcept {
-        // Set the active nodes in the given chromosome.
+    template<typename Stream>
+    Stream & operator << ( Stream & out_ ) noexcept {
         setActiveNodes ( );
-        // For all the chromo inputs.
         int i = 0;
-        for ( ; i < params.numInputs; ++i ) {
-            std::printf ( "(%d):\tinput\n", i );
-        }
-        // For all the hidden nodes.
+        for ( ; i < params.numInputs; ++i )
+            out_ << '(' << i << "):\tinput" << nl;
         for ( auto & node : nodes ) {
-            // Print the node function.
-            std::printf ( "(%d):\t%s\t", i, functionSet.label [ node.function ] );
-            // For the arity of the node.
-            for ( int j = 0; j < getChromosomeNodeArity ( node ); ++j ) {
-                // Print the node input information.
-                std::printf ( "%d ", node.inputs [ j ] );
+            if ( node.active ) {
+                out_ << '(' << i << "):\t" << functionSet.label [ node.function ] << '\t';
+                for ( int j = 0; j < node.arity; ++j )
+                    out_ << node.inputs [ j ] << ' ';
+                out_ << '\b' << nl;
             }
-            // Highlight active nodes.
-            if ( node.active )
-                std::printf ( "*" );
-            std::printf ( "\n" );
             ++i;
         }
-        // For all of the outputs.
-        std::printf ( "outputs: " );
-        for ( const int outputNode : outputNodes ) {
-            // Print the output node locations.
-            std::printf ( "%d ", outputNode );
-        }
-        std::printf ( "\n\n" );
+        out_ << "outputs: " << outputNodes << nl << nl;
+        out_ << "cost: " << cost ( ) << nl << nl;
     }
 };
 
@@ -561,7 +550,7 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) noexcept {
     // maybe parallel below is not possible, it requires a default constructor for the data iterator?
-    Real error = Real { 0 };
+    Real error = 0;
     std::for_each ( std::execution::par_unseq, std::cbegin ( data_ ), std::cend ( data_ ), [ & chromo_, & error ] ( const auto & sample ) noexcept {
         chromo_.execute ( sample.input );
         error = std::inner_product ( std::begin ( chromo_.outputValues ), std::end ( chromo_.outputValues ), std::begin ( sample.output ), error, std::plus<> ( ), [ ] ( const Real a, const Real b ) noexcept {
@@ -782,7 +771,7 @@ struct node {
     int active;
     double output;
     int maxArity;
-    int actArity;
+    int arity;
 };
 
 struct functionSet {
@@ -1336,7 +1325,7 @@ DLL_EXPORT int getNumChromosomeActiveConnections ( struct chromosome *chromo ) {
     int complexity = 0;
 
     for ( i = 0; i < chromo->numActiveNodes; i++ ) {
-        complexity += chromo->nodes [ chromo->activeNodes [ i ] ]->actArity;
+        complexity += chromo->nodes [ chromo->activeNodes [ i ] ]->arity;
     }
 
     return complexity;
