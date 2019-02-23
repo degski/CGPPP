@@ -436,11 +436,14 @@ struct Chromosome {
             return v;
         else if ( std::isinf ( v ) ) // This can happen.
             return v > Real { 0 } ? std::numeric_limits<Real>::max ( ) : std::numeric_limits<Real>::min ( );
+        #if defined ( _DEBUG )
         else if ( std::isnan ( v ) ) {
             std::cout << "Error: NAN returned from function \"" << functionSet.label [ function_ ].data ( ) << '\"' << nl;
-            std::cout << "This should not happen, fix the function, returning the NAN" << nl;
+            std::cout << "This should not happen, fix the above function returning the NAN" << nl;
+            std::cout << "Terminating CGPPP-Library" << nl;
             std::abort ( );
         }
+        #endif
     }
 
     // Executes this chromosome.
