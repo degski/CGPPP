@@ -429,6 +429,20 @@ struct Chromosome {
         return nodes != rhs_.nodes or outputNodes != rhs_.outputNodes;
     }
 
+    // Calculates the return value of the function, given the input.
+    Real calc ( const int function_, const stl::vector<Real> & input_ ) const noexcept {
+        const Real v = functionSet.function [ function_ ] ( input_ );
+        if ( std::isfinite ( v ) )
+            return v;
+        else if ( std::isinf ( v ) ) // This can happen.
+            return v > Real { 0 } ? std::numeric_limits<Real>::max ( ) : std::numeric_limits<Real>::min ( );
+        else if ( std::isnan ( v ) ) {
+            std::cout << "Error: NAN returned from function \"" << functionSet.label [ function_ ].data ( ) << '\"' << nl;
+            std::cout << "This should not happen, fix the function, returning the NAN" << nl;
+            std::abort ( );
+        }
+    }
+
     // Executes this chromosome.
     template<typename Container>
     void execute ( const Container & inputs_ ) noexcept {
@@ -439,11 +453,7 @@ struct Chromosome {
             std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ & inputs_, this ] ( const int input ) noexcept {
                 in.push_back ( input < params.numInputs ? inputs_ [ input ] : nodes [ input - params.numInputs ].output );
             } );
-            node.output = functionSet.function [ node.function ] ( in );
-            if ( std::isnan ( node.output ) )
-                node.output = 0;
-            else if ( std::isinf ( node.output ) )
-                node.output = node.output > Real { 0 } ? std::numeric_limits<Real>::max ( ) : std::numeric_limits<Real>::min ( );
+            node.output = calc ( node.function, in );
         }
         for ( int i = 0; i < params.numOutputs; ++i )
             outputValues [ i ] = outputNodes [ i ] < params.numInputs ? inputs_ [ outputNodes [ i ] ] : nodes [ outputNodes [ i ] - params.numInputs ].output;
