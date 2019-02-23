@@ -175,38 +175,38 @@ struct FunctionSet {
     struct FunctionData {
         const Pointer function;
         const Real cost;
-        const int numInputs = variableNumInputs;
+        const int arity = variableNumInputs;
     };
 
     public:
 
-    stl::vector<frozen::string> functionNames;
+    stl::vector<frozen::string> label;
     stl::vector<Pointer> function;
     stl::vector<Real> cost;
-    stl::vector<int> numInputs;
+    stl::vector<int> arity;
 
-    int numFunctions = 0;
+    int size = 0;
 
     friend class cereal::access;
 
     template<typename Archive>
     void save ( Archive & archive_ ) const {
-        archive_ ( numFunctions );
-        for ( const auto & name : functionNames )
+        archive_ ( size );
+        for ( const auto & name : label )
             archive_ ( std::string { name.data ( ), name.size ( ) } );
     }
 
     template<typename Archive>
     void load ( Archive & archive_ ) {
-        archive_ ( numFunctions );
+        archive_ ( size );
         std::string name;
-        for ( int i = 0; i < numFunctions; ++i ) {
+        for ( int i = 0; i < size; ++i ) {
             name.clear ( );
             archive_ ( name );
-            auto [ f, c, n ] { m_function_set.at ( functionNames.emplace_back ( name.data ( ), name.size ( ) ) ) };
+            auto [ f, c, a ] { m_function_set.at ( label.emplace_back ( name.data ( ), name.size ( ) ) ) };
             function.push_back ( f );
             cost.push_back ( c );
-            numInputs.push_back ( n );
+            arity.push_back ( a );
         }
     }
 
@@ -216,35 +216,35 @@ struct FunctionSet {
     }
 
     void addPresetNodeFunction ( frozen::string && functionName_ ) {
-        auto [ f, c, n ] { m_function_set.at ( functionNames.emplace_back ( std::move ( functionName_ ) ) ) };
+        auto [ f, c, a ] { m_function_set.at ( label.emplace_back ( std::move ( functionName_ ) ) ) };
         function.push_back ( f );
         cost.push_back ( c );
-        numInputs.push_back ( n );
-        ++numFunctions;
+        arity.push_back ( a );
+        ++size;
     }
 
     template<typename PointerType>
     void addCustomNodeFunction ( const frozen::string & functionName_, PointerType function_, const Real cost_, const int numInputs_ ) {
-        functionNames.push_back ( functionName_ );
+        label.push_back ( functionName_ );
         function.emplace_back ( function_ );
         cost.push_back ( cost_ );
-        numInputs.push_back ( numInputs_ );
-        ++numFunctions;
+        arity.push_back ( numInputs_ );
+        ++size;
     }
 
     void clear ( ) noexcept {
-        functionNames.clear ( );
+        label.clear ( );
         function.clear ( );
         cost.clear ( );
-        numInputs.clear ( );
-        numFunctions = 0;
+        arity.clear ( );
+        size = 0;
     }
 
     void printActiveFunctionSet ( ) const noexcept {
         std::cout << "Active Function Set:";
-        for ( const auto & name : functionNames )
+        for ( const auto & name : label )
             std::cout << ' ' << name.data ( );
-        std::cout << " (" << numFunctions << ')' << nl;
+        std::cout << " (" << size << ')' << nl;
     }
 
     static constexpr void printBuiltinFunctionSet ( ) noexcept {
@@ -258,7 +258,7 @@ struct FunctionSet {
         return static_cast<int> ( m_function_set.size ( ) );
     }
 
-    [[ nodiscard ]] static constexpr frozen::string builtinFunctionName ( const int i_ ) noexcept {
+    [[ nodiscard ]] static constexpr frozen::string builtinLabel ( const int i_ ) noexcept {
         return m_function_set.begin ( ) [ i_ ].first;
     }
     [[ nodiscard ]] static constexpr const FunctionData & builtinFunction ( const int i_ ) noexcept {

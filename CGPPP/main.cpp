@@ -109,9 +109,9 @@ float timeRandomFunction ( stl::vector<FunctionStats> & stats_ ) noexcept {
     const int i = cgp::Rng::randInt ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) );
     const auto f = cgp::FunctionSet<float>::builtinFunction ( i );
 
-    const auto input = getInputs ( f.numInputs );
+    const auto input = getInputs ( f.arity );
 
-    // std::cout << cgp::FunctionSet<float>::builtinFunctionName ( i ).data ( ) << ' ' << input.size ( ) << ' ' << input << " > " << f.function ( input ) << nl;
+    // std::cout << cgp::FunctionSet<float>::builtinLabel ( i ).data ( ) << ' ' << input.size ( ) << ' ' << input << " > " << f.function ( input ) << nl;
 
     float r = 0.0f;
 
@@ -133,7 +133,7 @@ int main ( ) {
     stl::vector<FunctionStats> stats ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) );
 
     for ( int i = 0; i < cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ); ++i )
-        stats [ i ].name = cgp::FunctionSet<float>::builtinFunctionName ( i ).data ( );
+        stats [ i ].name = cgp::FunctionSet<float>::builtinLabel ( i ).data ( );
 
     float r = 0.0f;
 

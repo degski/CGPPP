@@ -196,7 +196,7 @@ struct Parameters {
     template<typename ... Args>
     void addNodeFunction ( Args && ... args_ ) {
         functionSet.addNodeFunction ( std::forward<Args> ( args_ ) ... );
-        assert ( functionSet.numFunctions > 0 );
+        assert ( functionSet.size > 0 );
     }
 
     template<typename ... Args>
@@ -217,7 +217,7 @@ struct Parameters {
     }
 
     [[ nodiscard ]] int getRandomFunction ( ) const noexcept {
-        return Rng::randInt ( functionSet.numFunctions );
+        return Rng::randInt ( functionSet.size );
     }
 
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
@@ -479,7 +479,7 @@ struct Chromosome {
         // Log the node as active.
         activeNodes.push_back ( nodeIndex_ );
         node.active = true;
-        node.actArity = std::min ( functionSet.numInputs [ node.function ], params.arity );
+        node.actArity = std::min ( functionSet.arity [ node.function ], params.arity );
         std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.actArity, [ this ] ( const auto index ) noexcept { recursivelySetActiveNodes ( index ); } );
     }
 
@@ -503,7 +503,7 @@ struct Chromosome {
         // For all the hidden nodes.
         for ( auto & node : nodes ) {
             // Print the node function.
-            std::printf ( "(%d):\t%s\t", i, functionSet.functionNames [ node.function ] );
+            std::printf ( "(%d):\t%s\t", i, functionSet.label [ node.function ] );
             // For the arity of the node.
             for ( int j = 0; j < getChromosomeNodeArity ( node ); ++j ) {
                 // Print the node input information.
