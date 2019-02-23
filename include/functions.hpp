@@ -597,7 +597,7 @@ template<typename Real> [[ nodiscard ]] Real f_wire ( const stl::vector<Real> & 
 } // namespace function
 
 
-
+template<typename Real>
 struct FunctionStats {
 
     std::string name;
@@ -608,10 +608,10 @@ struct FunctionStats {
         time += ( elapsed_time_ - time ) / ++n;
     }
 
-    template<typename Stream>
-    friend Stream & operator << ( Stream & out_, const FunctionStats & v_ ) noexcept {
-        const int arity = cgp::FunctionSet<float>::m_function_set.at ( frozen::string { v_.name.data ( ), v_.name.length ( ) } ).arity;
-        if ( cgp::FunctionSet<float>::variableNumInputs == arity )
+    template<typename Stream, typename Real>
+    friend Stream & operator << ( Stream & out_, const FunctionStats<Real> & v_ ) noexcept {
+        const int arity = cgp::FunctionSet<Real>::m_function_set.at ( frozen::string { v_.name.data ( ), v_.name.length ( ) } ).arity;
+        if ( cgp::FunctionSet<Real>::variableNumInputs == arity )
             out_ << "       { \"" << v_.name << "\", { function::f_" << v_.name << ", " << std::fixed << std::setprecision ( 1 ) << ( v_.time / 1000.0 ) << " } }," << nl;
         else
             out_ << "       { \"" << v_.name << "\", { function::f_" << v_.name << ", " << std::fixed << std::setprecision ( 1 ) << ( v_.time / 1000.0 ) << ", " << arity << " } }," << nl;
@@ -620,20 +620,20 @@ struct FunctionStats {
 };
 
 
-stl::vector<float> getInputs ( const int arity_ ) noexcept {
-    const int arity = arity_ == cgp::FunctionSet<float>::variableNumInputs ? std::geometric_distribution<> ( ) ( cgp::Rng::gen ) + 2 : arity_;
-    stl::vector<float> v ( arity );
-    std::generate ( std::begin ( v ), std::end ( v ), [ ] { return std::uniform_real_distribution<float> ( -1.0f, 1.0f ) ( cgp::Rng::gen ); } );
+template<typename Real>
+stl::vector<Real> getInputs ( const int arity_ ) noexcept {
+    const int arity = arity_ == cgp::FunctionSet<Real>::variableNumInputs ? std::geometric_distribution<> ( ) ( cgp::Rng::gen ) + 2 : arity_;
+    stl::vector<Real> v ( arity );
+    std::generate ( std::begin ( v ), std::end ( v ), [ ] { return std::uniform_real_distribution<Real> ( Real { -1 }, Real { 1 } ) ( cgp::Rng::gen ); } );
     return v;
 }
 
-
-float timeRandomFunction ( stl::vector<FunctionStats> & stats_ ) noexcept {
-    const int i = cgp::Rng::randInt ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) );
-    const auto f = cgp::FunctionSet<float>::builtinFunction ( i );
-    const auto input = getInputs ( f.arity );
-    // std::cout << cgp::FunctionSet<float>::builtinLabel ( i ).data ( ) << ' ' << input.size ( ) << ' ' << input << " > " << f.function ( input ) << nl;
-    float r = 0.0f;
+template<typename Real>
+float timeRandomFunction ( stl::vector<FunctionStats<Real>> & stats_ ) noexcept {
+    const int i = cgp::Rng::randInt ( cgp::FunctionSet<Real>::sizeBuiltinFunctionSet ( ) );
+    const auto f = cgp::FunctionSet<Real>::builtinFunction ( i );
+    const stl::vector<Real> input = getInputs<Real> ( f.arity );
+    Real r = Real { 0 };
     static plf::nanotimer timer;
     timer.start ( );
     for ( int i = 0; i < 1'000; ++i )
@@ -642,14 +642,14 @@ float timeRandomFunction ( stl::vector<FunctionStats> & stats_ ) noexcept {
     return r / 1000.0f;
 }
 
-
-void generateCostsTable ( ) {
-    stl::vector<FunctionStats> stats ( cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ) );
-    for ( int i = 0; i < cgp::FunctionSet<float>::sizeBuiltinFunctionSet ( ); ++i )
-        stats [ i ].name = cgp::FunctionSet<float>::builtinLabel ( i ).data ( );
-    float r = 0.0f;
+template<typename Real>
+void generateCostTable ( ) {
+    stl::vector<FunctionStats<Real>> stats ( cgp::FunctionSet<Real>::sizeBuiltinFunctionSet ( ) );
+    for ( int i = 0; i < cgp::FunctionSet<Real>::sizeBuiltinFunctionSet ( ); ++i )
+        stats [ i ].name = cgp::FunctionSet<Real>::builtinLabel ( i ).data ( );
+    Real r = Real { 0 };
     for ( int i = 0; i < 10'000'000; ++i )
-        r += timeRandomFunction ( stats );
+        r += timeRandomFunction<Real> ( stats );
     std::cout << stats << nl;
 }
 
