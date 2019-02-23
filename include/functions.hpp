@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <iomanip>
 #include <sax/iostream.hpp>
 #include <iterator>
 #include <limits>
@@ -167,6 +168,7 @@ template<typename Real>
 struct FunctionSet {
 
     using Pointer = FunctionPointer<Real>;
+    using Label = frozen::string;
 
     static constexpr int variableNumInputs = std::numeric_limits<int>::max ( );
 
@@ -180,7 +182,7 @@ struct FunctionSet {
 
     public:
 
-    stl::vector<frozen::string> label;
+    stl::vector<Label> label;
     stl::vector<Pointer> function;
     stl::vector<Real> cost;
     stl::vector<int> arity;
@@ -215,7 +217,7 @@ struct FunctionSet {
         ( addPresetNodeFunction ( args_ ), ... );
     }
 
-    void addPresetNodeFunction ( frozen::string && label_ ) {
+    void addPresetNodeFunction ( Label && label_ ) {
         auto [ f, c, a ] { m_function_set.at ( label.emplace_back ( std::move ( label_ ) ) ) };
         function.push_back ( f );
         cost.push_back ( c );
@@ -224,7 +226,7 @@ struct FunctionSet {
     }
 
     template<typename PointerType>
-    void addCustomNodeFunction ( const frozen::string & label_, PointerType function_, const Real cost_, const int arity_ ) {
+    void addCustomNodeFunction ( const Label & label_, const PointerType function_, const Real cost_, const int arity_ ) {
         label.push_back ( label_ );
         function.emplace_back ( function_ );
         cost.push_back ( cost_ );
@@ -258,7 +260,7 @@ struct FunctionSet {
         return static_cast<int> ( m_function_set.size ( ) );
     }
 
-    [[ nodiscard ]] static constexpr const frozen::string & builtinLabel ( const int i_ ) noexcept {
+    [[ nodiscard ]] static constexpr const Label & builtinLabel ( const int i_ ) noexcept {
         return m_function_set.begin ( ) [ i_ ].first;
     }
     [[ nodiscard ]] static constexpr const FunctionData & builtinFunction ( const int i_ ) noexcept {
@@ -267,55 +269,55 @@ struct FunctionSet {
 
     // private:
 
-    static constexpr frozen::unordered_map<frozen::string, FunctionData, 48> m_function_set {
-        { "0", { function::f_0, 3, 0 } },
-        { "1", { function::f_1, 3, 0 } },
-        { "10", { function::f_10, 3, 0 } },
-        { "16", { function::f_16, 3, 0 } },
-        { "2", { function::f_2, 3, 0 } },
-        { "3", { function::f_3, 3, 0 } },
-        { "4", { function::f_4, 3, 0 } },
-        { "5", { function::f_5, 3, 0 } },
-        { "6", { function::f_6, 3, 0 } },
-        { "7", { function::f_7, 3, 0 } },
-        { "8", { function::f_8, 3, 0 } },
-        { "9", { function::f_9, 3, 0 } },
-        { "abs", { function::f_abs, 3, 1 } },
-        { "acos", { function::f_acos, 20, 1 } },
-        { "add", { function::f_add, 9 }  },
-        { "and", { function::f_and, 6 } },
-        { "asin", { function::f_asin, 20, 1 } },
-        { "atan", { function::f_atan, 13, 1 } },
-        { "bern", { function::f_bern, 8, 0 } },
-        { "cbrt", { function::f_cbrt, 4, 1 } },
-        { "cos", { function::f_cos, 10, 1 } },
-        { "cube", { function::f_cube, 3, 1 } },
-        { "div", { function::f_div, 4, 2 } },
-        { "e", { function::f_e, 3, 0 } },
-        { "exp", { function::f_exp, 11, 1 } },
-        { "exp2", { function::f_exp2, 82, 1 } },
-        { "idiv", { function::f_idiv, 4, 2 } },
-        { "irem", { function::f_irem, 4, 2 } },
-        { "log", { function::f_log, 14, 1 } },
-        { "log2", { function::f_log2, 48, 1 } },
-        { "mul", { function::f_mul, 10 } },
-        { "nand", { function::f_nand, 6 } },
-        { "neg", { function::f_neg, 4, 1 } },
-        { "nor", { function::f_nor, 4 } },
-        { "not", { function::f_not, 4, 1 } },
-        { "or", { function::f_or, 4 } },
-        { "pi", { function::f_pi, 3, 0 } },
-        { "pow", { function::f_pow, 28, 2 } },
-        { "rand", { function::f_rand, 16, 0 } },
-        { "reci", { function::f_reci, 4, 1 } },
-        { "sin", { function::f_sin, 11, 1 } },
-        { "sqr", { function::f_sqr, 3, 1 } },
-        { "sqrt", { function::f_sqrt, 4, 1 } },
-        { "sub", { function::f_sub, 3, 2 } },
-        { "tan", { function::f_tan, 11, 1 } },
-        { "wire", { function::f_wire, 3, 1 } },
-        { "xnor", { function::f_xnor, 6 } },
-        { "xor", { function::f_xor, 8 } }
+    static constexpr frozen::unordered_map<Label, FunctionData, 48> m_function_set {
+        { "0", { function::f_0, 2.7, 0 } },
+        { "1", { function::f_1, 2.8, 0 } },
+        { "10", { function::f_10, 2.7, 0 } },
+        { "16", { function::f_16, 2.7, 0 } },
+        { "2", { function::f_2, 2.8, 0 } },
+        { "3", { function::f_3, 2.7, 0 } },
+        { "4", { function::f_4, 2.8, 0 } },
+        { "5", { function::f_5, 2.7, 0 } },
+        { "6", { function::f_6, 2.7, 0 } },
+        { "7", { function::f_7, 2.7, 0 } },
+        { "8", { function::f_8, 2.7, 0 } },
+        { "9", { function::f_9, 2.7, 0 } },
+        { "abs", { function::f_abs, 3.2, 1 } },
+        { "acos", { function::f_acos, 17.2, 1 } },
+        { "add", { function::f_add, 7.2 } },
+        { "and", { function::f_and, 5.1 } },
+        { "asin", { function::f_asin, 17.7, 1 } },
+        { "atan", { function::f_atan, 11.5, 1 } },
+        { "bern", { function::f_bern, 7.1, 0 } },
+        { "cbrt", { function::f_cbrt, 65.8, 1 } },
+        { "cos", { function::f_cos, 8.2, 1 } },
+        { "cube", { function::f_cube, 2.7, 1 } },
+        { "div", { function::f_div, 3.2, 2 } },
+        { "e", { function::f_e, 2.7, 0 } },
+        { "exp", { function::f_exp, 9.8, 1 } },
+        { "exp2", { function::f_exp2, 76.3, 1 } },
+        { "idiv", { function::f_idiv, 3.3, 2 } },
+        { "irem", { function::f_irem, 3.3, 2 } },
+        { "log", { function::f_log, 11.1, 1 } },
+        { "log2", { function::f_log2, 44.7, 1 } },
+        { "mul", { function::f_mul, 8.8 } },
+        { "nand", { function::f_nand, 5.6 } },
+        { "neg", { function::f_neg, 3.2, 1 } },
+        { "nor", { function::f_nor, 3.8 } },
+        { "not", { function::f_not, 3.4, 1 } },
+        { "or", { function::f_or, 3.9 } },
+        { "pi", { function::f_pi, 2.7, 0 } },
+        { "pow", { function::f_pow, 24.4, 2 } },
+        { "rand", { function::f_rand, 14.3, 0 } },
+        { "reci", { function::f_reci, 3.2, 1 } },
+        { "sin", { function::f_sin, 8.1, 1 } },
+        { "sqr", { function::f_sqr, 2.7, 1 } },
+        { "sqrt", { function::f_sqrt, 3.5, 1 } },
+        { "sub", { function::f_sub, 2.7, 2 } },
+        { "tan", { function::f_tan, 9.1, 1 } },
+        { "wire", { function::f_wire, 2.7, 1 } },
+        { "xnor", { function::f_xnor, 5.7 } },
+        { "xor", { function::f_xor, 7.4 } }
     };
 };
 
@@ -345,8 +347,7 @@ template<typename Real> [[ nodiscard ]] Real f_mul ( const stl::vector<Real> & i
     return std::accumulate ( std::begin ( inputs_ ), std::end ( inputs_ ), Real { 1 }, std::multiplies<Real> ( ) );
 }
 
-// Node function div. Returns the first input divided by the second input divided by
-// the third input etc.
+// Node function div. Returns the first input divided by the second input.
 template<typename Real> [[ nodiscard ]] Real f_div ( const stl::vector<Real> & inputs_ ) noexcept {
     return Real { 0 } != inputs_ [ 1 ] ? inputs_ [ 0 ] / inputs_ [ 1 ] : Real { 0 };
 }

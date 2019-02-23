@@ -92,15 +92,19 @@ struct FunctionStats {
 
     template<typename Stream>
     friend Stream & operator << ( Stream & out_, const FunctionStats & v_ ) noexcept {
-        out_ << "<\"" << v_.name << "\" " << static_cast<int> ( v_.time ) << '>' << nl;
+        const int arity = cgp::FunctionSet<float>::m_function_set.at ( frozen::string { v_.name.data ( ), v_.name.length ( ) } ).arity;
+        if ( cgp::FunctionSet<float>::variableNumInputs == arity )
+            out_ << "       { \"" << v_.name << "\", { function::f_" << v_.name << ", " << std::fixed << std::setprecision ( 1 ) << ( v_.time / 1000.0 ) << " } }," << nl;
+        else
+            out_ << "       { \"" << v_.name << "\", { function::f_" << v_.name << ", " << std::fixed << std::setprecision ( 1 ) << ( v_.time / 1000.0 ) << ", " << arity << " } }," << nl;
         return out_;
     }
 };
 
 
-stl::vector<float> getInputs ( const int num_inputs_ ) noexcept {
-    const int size = num_inputs_ == cgp::FunctionSet<float>::variableNumInputs ? std::geometric_distribution<> ( ) ( cgp::Rng::gen ) + 2  : num_inputs_;
-    stl::vector<float> v ( size );
+stl::vector<float> getInputs ( const int arity_ ) noexcept {
+    const int arity = arity_ == cgp::FunctionSet<float>::variableNumInputs ? std::geometric_distribution<> ( ) ( cgp::Rng::gen ) + 2  : arity_;
+    stl::vector<float> v ( arity );
     std::generate ( std::begin ( v ), std::end ( v ), [ ] { return std::uniform_real_distribution<float> ( -1.0f, 1.0f ) ( cgp::Rng::gen ); } );
     return v;
 }
@@ -137,14 +141,14 @@ int main ( ) {
 
     float r = 0.0f;
 
-    for ( int i = 0; i < 100'000'000; ++i ) {
+    for ( int i = 0; i < 10'000'000; ++i ) {
         r += timeRandomFunction ( stats );
     }
 
     std::cout << r << nl;
 
-    //auto min_s = std::min_element ( std::begin ( stats ), std::end ( stats ), [ ] ( const FunctionStats & a, const FunctionStats b ) { return a.time < b.time; } );
-    //std::for_each ( std::begin ( stats ), std::end ( stats ), [ & min_s ] ( FunctionStats & s ) { s.time /= min_s->time; } );
+    // auto min_s = std::min_element ( std::begin ( stats ), std::end ( stats ), [ ] ( const FunctionStats & a, const FunctionStats b ) { return a.time < b.time; } );
+    // std::for_each ( std::begin ( stats ), std::end ( stats ), [ & min_s ] ( FunctionStats & s ) { s.time /= min_s->time; } );
 
     std::cout << stats << nl;
 
