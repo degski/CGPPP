@@ -83,6 +83,10 @@ Stream & operator << ( Stream & out_, const chr & v_ ) noexcept {
 
 int main ( ) {
 
+    cgp::generateCostTable<float> ( );
+
+    /*
+
     auto p = cgp::initialize ( 2, 32, 1, 2 );
 
     p.setDimensions ( 2, 32, 1, 2 );
@@ -98,6 +102,7 @@ int main ( ) {
     cgp::Data<Float> ds;
 
     ds.loadFromFile ( "../data/", "table.data" );
+    */
 
     return EXIT_SUCCESS;
 }

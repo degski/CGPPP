@@ -612,9 +612,9 @@ struct FunctionStats {
     friend Stream & operator << ( Stream & out_, const FunctionStats<Real> & v_ ) noexcept {
         const int arity = cgp::FunctionSet<Real>::m_function_set.at ( frozen::string { v_.name.data ( ), v_.name.length ( ) } ).arity;
         if ( cgp::FunctionSet<Real>::variableNumInputs == arity )
-            out_ << "        { \"" << v_.name << "\", { function::f_" << v_.name << ", " << std::fixed << std::setprecision ( 1 ) << ( v_.time / 1000.0 ) << " } }," << nl;
+            out_ << "       { \"" << v_.name << "\", { function::f_" << v_.name << ", " << std::fixed << std::setprecision ( 1 ) << ( v_.time / 1000.0 ) << " } }," << nl;
         else
-            out_ << "        { \"" << v_.name << "\", { function::f_" << v_.name << ", " << std::fixed << std::setprecision ( 1 ) << ( v_.time / 1000.0 ) << ", " << arity << " } }," << nl;
+            out_ << "       { \"" << v_.name << "\", { function::f_" << v_.name << ", " << std::fixed << std::setprecision ( 1 ) << ( v_.time / 1000.0 ) << ", " << arity << " } }," << nl;
         return out_;
     }
 };
@@ -650,7 +650,7 @@ void generateCostTable ( ) {
     Real r = Real { 0 };
     for ( int i = 0; i < 10'000'000; ++i )
         r += timeRandomFunction<Real> ( stats );
-    std::cout << stats << nl;
+    std::cout << ' ' << stats << nl;
 }
 
 
