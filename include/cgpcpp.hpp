@@ -303,12 +303,18 @@ struct Node {
     explicit Node ( const int nodePosition_ ) :
 
         function { params.getRandomFunction ( ) },
-        active { true },
-        output { 0 },
-        arity { getArity ( ) } {
+        active { false },
+        arity { std::min ( functionSet.arity [ function ], params.arity ) } {
 
         inputs.reserve ( params.arity );
         std::generate_n ( sax::back_emplacer ( inputs ), params.arity, [ nodePosition_ ] ( ) noexcept { return params.getRandomNodeInput ( nodePosition_ ); } );
+    }
+
+    void reInit ( const int nodePosition_ ) noexcept {
+        function = params.getRandomFunction ( );
+        active = false;
+        arity = std::min ( functionSet.arity [ function ], params.arity );
+        std::generate ( std::begin ( inputs ), std::end ( inputs ), [ nodePosition_ ] ( ) noexcept { return params.getRandomNodeInput ( nodePosition_ ); } );
     }
 
     [[ nodiscard ]] int getArity ( ) const noexcept {
@@ -401,6 +407,17 @@ struct Chromosome {
         activeNodes.reserve ( params.numNodes );
         setActiveNodes ( );
     }
+
+    void reInit ( ) {
+        fitness = -1;
+        generation = 0; // Just borrowing this temp.
+        std::for_each ( std::begin ( nodes ), std::end ( nodes ), [ this ] ( auto & node ) { node.reInit ( generation++ ); } );
+        generation = 0;
+        std::generate ( std::begin ( outputNodes ), std::end ( outputNodes ), [ ] ( ) noexcept { return params.getRandomChromosomeOutput ( ); } );
+        activeNodes.clear ( );
+        setActiveNodes ( );
+    }
+
     Chromosome ( const Chromosome & rhs_ ) :
         nodes ( rhs_.nodes ),
         outputNodes ( rhs_.outputNodes ),
@@ -443,6 +460,8 @@ struct Chromosome {
             std::cout << "Terminating CGPPP-Library" << nl;
             std::abort ( );
         }
+        #else
+        return std::numeric_limits<Real>::quiet_NaN ( );
         #endif
     }
 
@@ -483,7 +502,7 @@ struct Chromosome {
     }
 
      // Used by setActiveNodes to recursively search for active nodes.
-    void recursivelySetActiveNodes ( int nodeIndex_ ) noexcept {
+    void setActiveNodes ( int nodeIndex_ ) noexcept {
         nodeIndex_ -= params.numInputs;
         auto & node = nodes [ nodeIndex_ ];
         // If the given node is an input or has already been flagged as active, stop.
@@ -493,13 +512,12 @@ struct Chromosome {
         // Log the node as active.
         activeNodes.push_back ( nodeIndex_ );
         node.activate ( );
-        std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ this ] ( const int index ) noexcept { recursivelySetActiveNodes ( index ); } );
+        std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ this ] ( const int index ) noexcept { setActiveNodes ( index ); } );
     }
 
     // Set the active nodes.
     void setActiveNodes ( ) noexcept {
-        clearActiveNodes ( );
-        std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( const int index ) noexcept { recursivelySetActiveNodes ( index ); } );
+        std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( const int index ) noexcept { setActiveNodes ( index ); } );
         std::sort ( std::begin ( activeNodes ), std::end ( activeNodes ) );
     }
 
