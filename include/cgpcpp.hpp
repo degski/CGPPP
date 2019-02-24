@@ -522,7 +522,7 @@ struct Chromosome {
         int i = 0;
         for ( ; i < params.numInputs; ++i )
             out_ << '(' << i << "):\tinput" << nl;
-        for ( auto & node : nodes ) {
+        for ( const auto & node : nodes ) {
             if ( node.active ) {
                 out_ << '(' << i << "):\t" << functionSet.label [ node.function ] << '\t';
                 for ( int j = 0; j < node.arity; ++j )
