@@ -359,7 +359,6 @@ struct Chromosome {
 
     stl::vector<Node<Real>> nodes;
     stl::vector<int> outputNodes;
-    stl::vector<int> activeNodes;
     stl::vector<Real> outputValues;
 
     Real fitness;
@@ -371,7 +370,6 @@ struct Chromosome {
     void serialize ( Archive & archive_ ) {
         archive_ ( params.numInputs, params.numNodes, params.numOutputs, params.arity );
         archive_ ( functionSet );
-        archive_ ( nodes, outputNodes, activeNodes );
     }
 
     void saveToFile ( fs::path && path_, std::string && file_name_ ) {
@@ -403,8 +401,6 @@ struct Chromosome {
 
         outputNodes.reserve ( params.numOutputs );
         std::generate_n ( sax::back_emplacer ( outputNodes ), params.numOutputs, [ ] ( ) noexcept { return params.getRandomChromosomeOutput ( ); } );
-
-        activeNodes.reserve ( params.numNodes );
         setActiveNodes ( );
     }
 
@@ -414,14 +410,12 @@ struct Chromosome {
         std::for_each ( std::begin ( nodes ), std::end ( nodes ), [ this ] ( auto & node ) { node.reInit ( generation++ ); } );
         generation = 0;
         std::generate ( std::begin ( outputNodes ), std::end ( outputNodes ), [ ] ( ) noexcept { return params.getRandomChromosomeOutput ( ); } );
-        activeNodes.clear ( );
         setActiveNodes ( );
     }
 
     Chromosome ( const Chromosome & rhs_ ) :
         nodes ( rhs_.nodes ),
         outputNodes ( rhs_.outputNodes ),
-        activeNodes ( rhs_.activeNodes ),
         fitness ( rhs_.fitness ),
         generation ( rhs_.generation ) {
     }
@@ -431,7 +425,6 @@ struct Chromosome {
     [[ maybe_unused ]] Chromosome & operator = ( const Chromosome & rhs_ ) {
         nodes = rhs_.nodes;
         outputNodes = rhs_.outputNodes;
-        activeNodes = rhs_.activeNodes;
         fitness = rhs_.fitness;
         generation = rhs_.generation;
         return * this;
@@ -468,14 +461,15 @@ struct Chromosome {
     // Executes this chromosome.
     template<typename Container>
     void execute ( const Container & inputs_ ) noexcept {
-        for ( const int currentActiveNode : activeNodes ) {
-            Node<Real> & node = nodes [ currentActiveNode ];
-            static thread_local stl::vector<Real> in;
-            in.clear ( );
-            std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ & inputs_, this ] ( const int input ) noexcept {
-                in.push_back ( input < params.numInputs ? inputs_ [ input ] : nodes [ input - params.numInputs ].output );
-            } );
-            node.output = calc ( node.function, in );
+        for ( auto & node : nodes ) {
+            if ( node.active ) {
+                static thread_local stl::vector<Real> in;
+                in.clear ( );
+                std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ &inputs_, this ] ( const int input ) noexcept {
+                    in.push_back ( input < params.numInputs ? inputs_ [ input ] : nodes [ input - params.numInputs ].output );
+                } );
+                node.output = calc ( node.function, in );
+            }
         }
         for ( int i = 0; i < params.numOutputs; ++i )
             outputValues [ i ] = outputNodes [ i ] < params.numInputs ? inputs_ [ outputNodes [ i ] ] : nodes [ outputNodes [ i ] - params.numInputs ].output;
@@ -499,7 +493,6 @@ struct Chromosome {
 
     // Reset the active nodes.
     void clearActiveNodes ( ) noexcept {
-        activeNodes.clear ( );
         std::for_each ( std::begin ( nodes ), std::end ( nodes ), [ ] ( auto & node ) noexcept { node.deactivate ( ); } );
     }
 
@@ -512,7 +505,6 @@ struct Chromosome {
         if ( nodeIndex_ < 0 or node.active )
             return;
         // Log the node as active.
-        activeNodes.push_back ( nodeIndex_ );
         node.activate ( );
         std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ this ] ( const int index ) noexcept { setActiveNodes ( index ); } );
     }
@@ -520,7 +512,6 @@ struct Chromosome {
     // Set the active nodes.
     void setActiveNodes ( ) noexcept {
         std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( const int index ) noexcept { setActiveNodes ( index ); } );
-        std::sort ( std::begin ( activeNodes ), std::end ( activeNodes ) );
     }
 
     Real cost ( ) const noexcept {
