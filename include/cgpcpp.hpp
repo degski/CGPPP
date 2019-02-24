@@ -465,7 +465,7 @@ struct Chromosome {
             if ( node.active ) {
                 static thread_local stl::vector<Real> in;
                 in.clear ( );
-                std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ &inputs_, this ] ( const int input ) noexcept {
+                std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ & inputs_, this ] ( const int input ) noexcept {
                     in.push_back ( input < params.numInputs ? inputs_ [ input ] : nodes [ input - params.numInputs ].output );
                 } );
                 node.output = calc ( node.function, in );
@@ -489,11 +489,6 @@ struct Chromosome {
         fitness = params.fitnessFunction ( * this, data_set_ );
     }
 
-    // Reset the active nodes.
-    void clearActiveNodes ( ) noexcept {
-        std::for_each ( std::begin ( nodes ), std::end ( nodes ), [ ] ( auto & node ) noexcept { node.deactivate ( ); } );
-    }
-
      // Used by setActiveNodes to recursively search for active nodes.
     void setActiveNodes ( int nodeIndex_ ) noexcept {
         nodeIndex_ -= params.numInputs;
@@ -509,6 +504,7 @@ struct Chromosome {
 
     // Set the active nodes.
     void setActiveNodes ( ) noexcept {
+        std::for_each ( std::begin ( nodes ), std::end ( nodes ), [ ] ( auto & node ) noexcept { node.deactivate ( ); } );
         std::for_each ( std::begin ( outputNodes ) + params.numInputs, std::end ( outputNodes ), [ this ] ( const int index ) noexcept { setActiveNodes ( index ); } );
     }
 
