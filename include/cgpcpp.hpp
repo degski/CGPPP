@@ -609,7 +609,54 @@ void pointMutation ( Chromosome<Real> & chromo_ ) noexcept {
     }
 }
 
-// The default fitness function used by CGP-Library. simply assigns an
+
+
+// Conductions a single active mutation on the give chromosome.
+template<typename Real>
+void singleMutation ( Chromosome<Real> & chromo_ ) noexcept {
+    const int numInputGenes = params.numNodes * params.arity;
+    const int numGenes = params.numNodes + numInputGenes + params.numOutputs;
+    bool notIsMutated = true;
+    while ( notIsMutated ) {
+        const int geneToMutate = Rng::randInt ( numGenes );
+        // Mutate function gene.
+        if ( geneToMutate < params.numNodes ) {
+            const int nodeIndex = geneToMutate;
+            if ( chromo_.nodes [ nodeIndex ].active ) {
+                int newF = functionSet.getRandomFunction ( );
+                while ( newF == chromo_.nodes [ nodeIndex ].function )
+                    newF = functionSet.getRandomFunction ( );
+                chromo_.nodes [ nodeIndex ].function = newF;
+                notIsMutated = false;
+            }
+        }
+        // Mutate node input gene.
+        else if ( geneToMutate < params.numNodes + numInputGenes ) {
+            const int nodeIndex = ( geneToMutate - params.numNodes ) / chromo_.arity;
+            const int nodeInputIndex = ( geneToMutate - params.numNodes ) % chromo_.arity;
+            if ( chromo_.nodes [ nodeIndex ].active ) {
+                int & oldI = chromo_.nodes [ nodeIndex ].inputs [ nodeInputIndex ];
+                int newI = params.getRandomNodeInput ( nodeIndex );
+                while ( newI == oldI )
+                    newI = params.getRandomNodeInput ( nodeIndex );
+                oldI = newI;
+                notIsMutated = false;
+            }
+        }
+        // Mutate output gene.
+        else {
+            const int nodeIndex = geneToMutate - params.numNodes - numInputGenes;
+            int newO = params.getRandomChromosomeOutput ( );
+            while ( newO == chromo_.outputNodes [ nodeIndex ] )
+                newO = params.getRandomChromosomeOutput ( );
+            chromo_.outputNodes [ nodeIndex ] = newO;
+            notIsMutated = false;
+        }
+    }
+}
+
+
+// The default fitness function used by CGPPP-Library. simply assigns an
 // error of the sum of the absolute differences between the target and
 // actual outputs for all outputs over all samples.
 template<typename Real>
@@ -1807,69 +1854,6 @@ DLL_EXPORT struct chromosome* getChromosome ( struct results *rels, int run ) {
     chromo = initialiseChromosomeFromChromosome ( rels->bestChromosomes [ run ] );
 
     return chromo;
-}
-
-
-
-/*
-    Conductions point mutation on the give chromosome. A predetermined
-    number of chromosome genes are randomly selected and changed to
-    a random valid allele. The number of mutations is the number of chromosome
-    genes multiplied by the mutation rate. Each gene has equal probability
-    of being selected.
-
-    DO NOT USE WITH ANN
-*/
-static void pointMutation ( struct parameters *params, struct chromosome *chromo ) {
-
-    int i;
-    int numGenes;
-    int numFunctionGenes, numInputGenes, numOutputGenes;
-    int numGenesToMutate;
-    int geneToMutate;
-    int nodeIndex;
-    int nodeInputIndex;
-
-    /* get the number of each type of gene */
-    numFunctionGenes = params.numNodes;
-    numInputGenes = params.numNodes * params.arity;
-    numOutputGenes = params.numOutputs;
-
-    /* set the total number of chromosome genes */
-    numGenes = numFunctionGenes + numInputGenes + numOutputGenes;
-
-    /* calculate the number of genes to mutate */
-    numGenesToMutate = ( int ) roundf ( numGenes * params.mutationRate );
-
-    /* for the number of genes to mutate */
-    for ( i = 0; i < numGenesToMutate; i++ ) {
-
-        /* select a random gene */
-        geneToMutate = randInt ( numGenes );
-
-        /* mutate function gene */
-        if ( geneToMutate < numFunctionGenes ) {
-
-            nodeIndex = geneToMutate;
-
-            chromo_.nodes [ nodeIndex ]->function = getRandomFunction ( chromo_.functionSet->numFunctions );
-        }
-
-        /* mutate node input gene */
-        else if ( geneToMutate < numFunctionGenes + numInputGenes ) {
-
-            nodeIndex = ( int ) ( ( geneToMutate - numFunctionGenes ) / chromo_.arity );
-            nodeInputIndex = ( geneToMutate - numFunctionGenes ) % chromo_.arity;
-
-            chromo_.nodes [ nodeIndex ]->inputs [ nodeInputIndex ] = getRandomNodeInput ( chromo_.numInputs, chromo_.numNodes, nodeIndex, params.recurrentConnectionProbability );
-        }
-
-        /* mutate output gene */
-        else {
-            nodeIndex = geneToMutate - numFunctionGenes - numInputGenes;
-            chromo_.outputNodes [ nodeIndex ] = getRandomChromosomeOutput ( chromo_.numInputs, chromo_.numNodes, params.shortcutConnections );
-        }
-    }
 }
 
 
