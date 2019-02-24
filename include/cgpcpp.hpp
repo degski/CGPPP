@@ -486,8 +486,6 @@ struct Chromosome {
 
     void setFitness ( const DataSet & data_set_ ) noexcept {
         setActiveNodes ( );
-        for ( auto & node : nodes )
-            node.reset ( );
         fitness = params.fitnessFunction ( * this, data_set_ );
     }
 
