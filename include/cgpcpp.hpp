@@ -99,9 +99,9 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept;
 template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) noexcept;
 template<typename Real>
-void selectFittest ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> && candidateChromos_ ) noexcept;
+void selectFittest ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> & free_list_, ChromosomePtrVec<Real> & candidateChromos_ ) noexcept;
 template<typename Real>
-void mutateRandomParent ( ChromosomePtrVec<Real> & children_, const ChromosomePtrVec<Real> & parents_ ) noexcept;
+void mutateRandomParent ( ChromosomePtrVec<Real> & children_, ChromosomePtrVec<Real> & free_list_, const ChromosomePtrVec<Real> & parents_ ) noexcept;
 
 
 template<typename Real>
@@ -127,9 +127,9 @@ struct Parameters {
     std::string mutationTypeName;
     Real ( * fitnessFunction ) ( Chromosome<Real> & chromo_, const DataSet & data_ );
     std::string fitnessFunctionName;
-    void ( * selectionScheme ) ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> && candidateChromos_ );
+    void ( * selectionScheme ) ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> & free_list_, ChromosomePtrVec<Real> & candidateChromos_ );
     std::string selectionSchemeName;
-    void ( * reproductionScheme )( ChromosomePtrVec<Real> & children_, const ChromosomePtrVec<Real> & parents_ );
+    void ( * reproductionScheme )( ChromosomePtrVec<Real> & children_, ChromosomePtrVec<Real> & free_list_, const ChromosomePtrVec<Real> & parents_ );
     std::string reproductionSchemeName;
 
     int numInputs;
@@ -212,12 +212,12 @@ struct Parameters {
         mutationDistribution = std::bernoulli_distribution { mutationRate };
     }
 
-    [[ nodiscard ]] bool mutate ( ) const noexcept {
-        return mutationDistribution ( Rng::gen );
+    Real getMutationRate ( ) const noexcept {
+        return mutationRate;
     }
 
-    [[ nodiscard ]] int getRandomFunction ( ) const noexcept {
-        return Rng::randInt ( functionSet.size );
+    [[ nodiscard ]] bool mutate ( ) const noexcept {
+        return mutationDistribution ( Rng::gen );
     }
 
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
@@ -302,7 +302,7 @@ struct Node {
     Node ( Node && ) noexcept = default;
     explicit Node ( const int nodePosition_ ) :
 
-        function { params.getRandomFunction ( ) },
+        function { functionSet.getRandomFunction ( ) },
         active { false },
         arity { std::min ( functionSet.arity [ function ], params.arity ) } {
 
@@ -311,7 +311,7 @@ struct Node {
     }
 
     void reInit ( const int nodePosition_ ) noexcept {
-        function = params.getRandomFunction ( );
+        function = functionSet.getRandomFunction ( );
         active = false;
         arity = std::min ( functionSet.arity [ function ], params.arity );
         std::generate ( std::begin ( inputs ), std::end ( inputs ), [ nodePosition_ ] ( ) noexcept { return params.getRandomNodeInput ( nodePosition_ ); } );
@@ -481,9 +481,11 @@ struct Chromosome {
             outputValues [ i ] = outputNodes [ i ] < params.numInputs ? inputs_ [ outputNodes [ i ] ] : nodes [ outputNodes [ i ] - params.numInputs ].output;
     }
 
-    [[ nodiscard ]] std::unique_ptr<Chromosome> mutate ( ) const noexcept {
-        auto mutated = std::make_unique<Chromosome> ( * this );
-        params.mutationType ( * mutated );
+    [[ nodiscard ]] std::unique_ptr<Chromosome> mutate ( ChromosomePtrVec<Real> & free_list_ ) const noexcept {
+        std::unique_ptr<Chromosome> mutated = std::move ( free_list_.back ( ) );
+        free_list_.pop_back ( );
+        *mutated = *this;
+        params.mutationType ( *mutated );
         mutated->setActiveNodes ( );
         return mutated;
     }
@@ -561,7 +563,7 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
     for ( auto & node : chromo_.nodes ) {
         // Mutate the function gene.
         if ( params.mutate ( ) )
-            node.function = params.getRandomFunction ( );
+            node.function = functionSet.getRandomFunction ( );
         for ( auto & input : node.inputs ) {
             if ( params.mutate ( ) )
                 input = params.getRandomNodeInput ( nodePosition );
@@ -574,6 +576,38 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
     }
 }
 
+
+
+// Conductions point mutation on the give chromosome. A predetermined
+// number of chromosome genes are randomly selected and changed to
+// a random valid allele. The number of mutations is the number of chromosome
+// genes multiplied by the mutation rate. Each gene has equal probability
+// of being selected.
+template<typename Real>
+void pointMutation ( Chromosome<Real> & chromo_ ) noexcept {
+    const int numInputGenes = params.numNodes * params.arity;
+    const int numGenes = params.numNodes + numInputGenes + params.numOutputs;
+    const int numGenesToMutate = static_cast<int> ( std::round ( numGenes * params.getMutationRate ( ) ) );
+    for ( int i = 0; i < numGenesToMutate; ++i ) {
+        const int geneToMutate = Rng::randInt ( numGenes );
+        // Mutate function gene.
+        if ( geneToMutate < params.numNodes ) {
+            const int nodeIndex = geneToMutate;
+            chromo_.nodes [ nodeIndex ].function = functionSet.getRandomFunction ( );
+        }
+        // Mutate node input gene.
+        else if ( geneToMutate < params.numNodes + numInputGenes ) {
+            const int nodeIndex = ( geneToMutate - params.numNodes ) / chromo_.arity;
+            const int nodeInputIndex = ( geneToMutate - params.numNodes ) % chromo_.arity;
+            chromo_.nodes [ nodeIndex ].inputs [ nodeInputIndex ] = params.getRandomNodeInput ( nodeIndex );
+        }
+        // Mutate output gene.
+        else {
+            const int nodeIndex = geneToMutate - params.numNodes - numInputGenes;
+            chromo_.outputNodes [ nodeIndex ] = params.getRandomChromosomeOutput ( );
+        }
+    }
+}
 
 // The default fitness function used by CGP-Library. simply assigns an
 // error of the sum of the absolute differences between the target and
@@ -601,26 +635,18 @@ Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) no
 // their fitnesses are equal. A desirable property in CGPPP to
 // facilitate neutral genetic drift.
 template<typename Real>
-void selectFittest ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> && candidateChromos_ ) noexcept {
+void selectFittest ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> & free_list_, ChromosomePtrVec<Real> & candidateChromos_ ) noexcept {
     std::stable_sort ( std::execution::par_unseq, std::begin ( candidateChromos_ ), std::end ( candidateChromos_ ), [ ] ( const ChromosomePtr<Real> & a, const ChromosomePtr<Real> & b ) noexcept { return a->fitness < b->fitness; } );
+    std::move ( std::begin ( candidateChromos_ ) + params.mu, std::end ( candidateChromos_ ), sax::back_emplacer ( free_list_ ) );
     candidateChromos_.resize ( params.mu );
-    parents_ = std::move ( candidateChromos_ );
-}
-
-template<typename Real>
-using chromos_iterator = typename ChromosomePtrVec<Real>::iterator;
-
-template<typename Real>
-void selectFittest ( chromos_iterator<Real> parents_begin_, chromos_iterator<Real> parents_end_, chromos_iterator<Real> candidates_begin_, chromos_iterator<Real> candidates_end_ ) noexcept {
-    std::stable_sort ( std::execution::par_unseq, candidates_begin_, candidates_end_, [ ] ( const ChromosomePtr<Real> & a, const ChromosomePtr<Real> & b ) noexcept { return a->fitness < b->fitness; } );
+    std::swap ( parents_, candidateChromos_ );
 }
 
 
 // Mutate Random parent reproduction method.
 template<typename Real>
-void mutateRandomParent ( ChromosomePtrVec<Real> & children_, const ChromosomePtrVec<Real> & parents_ ) noexcept {
-    children_.resize ( params.lambda );
-    std::for_each ( std::execution::par_unseq, std::begin ( children_ ), std::end ( children_ ), [ & parents_ ] ( ChromosomePtr<Real> & child ) noexcept { child = parents_ [ Rng::randInt ( parents_.size ( ) ) ]->mutate ( ); } );
+void mutateRandomParent ( ChromosomePtrVec<Real> & children_, ChromosomePtrVec<Real> & free_list_, const ChromosomePtrVec<Real> & parents_ ) noexcept {
+    std::generate_n ( std::execution::par_unseq, std::begin ( children_ ), params.lambda, [ & free_list_, & parents_ ] ( ) noexcept { return parents_ [ Rng::randInt ( parents_.size ( ) ) ]->mutate ( free_list_ ); } );
 }
 
 
@@ -634,14 +660,15 @@ ChromosomePtr<Real> runCGPPP ( const int numGens_ ) {
     ChromosomePtrVec<Real> parentChromos ( params.mu );
     ChromosomePtrVec<Real> childrenChromos ( params.lambda );
 
+    ChromosomePtrVec<Real> freeList;
+    freeList.reserve ( params.mu );
+
     // Set fitness of the parents.
     std::for_each ( std::execution::par_unseq, std::begin ( parentChromos ), std::end ( parentChromos ), [ ] ( ChromosomePtr<Real> & parent ) noexcept { parent->setFitness ( dataSet ); } );
 
     // show the user whats going on.
-    if ( params.updateFrequency != 0 ) {
-        std::printf ( "\n-- Starting CGPPP --\n\n" );
-        std::printf ( "Gen\tfitness\n" );
-    }
+    if ( params.updateFrequency != 0 )
+        std::cout << nl << "-- Starting CGPPP --" << nl << nl << "Gen" << '\t' << "fitness" << nl;
 
     int gen = 0;
 
@@ -659,42 +686,34 @@ ChromosomePtr<Real> runCGPPP ( const int numGens_ ) {
         // Check termination conditions.
         if ( bestChromo->fitness <= params.targetFitness ) {
             if ( params.updateFrequency != 0 )
-                std::printf ( "%d\t%f - Solution Found\n", gen, bestChromo->fitness );
+                std::cout << gen << '\t' << bestChromo->fitness << " - Solution Found" << nl;
             break;
         }
 
         // Display progress to the user at the update frequency specified.
-        if ( params.updateFrequency != 0 and ( gen % params.updateFrequency == 0 or gen >= numGens_ - 1 ) ) {
-            std::printf ( "%d\t%f\n", gen, bestChromo->fitness );
-        }
+        if ( params.updateFrequency != 0 and ( gen % params.updateFrequency == 0 or gen >= numGens_ - 1 ) )
+            std::cout << gen << '\t' << bestChromo->fitness << nl;
 
-        // Select and reproduce.
-
-        // Set the chromosomes which will be used by the selection scheme
-        // dependant upon the evolutionary strategy. i.e. '+' all are used
-        // by the selection scheme, ',' only the children are.
-        if ( params.evolutionaryStrategy == '+' ) {
-
-            // Note: the children are placed before the parents to
-            // ensure 'new blood' is always selected over old if the
+        // Select and reproduce: set the chromosomes which will be used by the selection scheme, dependant upon the
+        // evolutionary strategy, i.e. '+' all are used by the selection scheme, ',' only the children are.
+        if ( params.evolutionaryStrategy == '+' )
+            // Note: the children are placed before the parents to ensure 'new blood' is always selected over old if the
             // fitness are equal.
-
             std::move ( std::begin ( parentChromos ), std::end ( parentChromos ), sax::back_emplacer ( childrenChromos ) );
-        }
+        else
+            std::move ( std::begin ( parentChromos ), std::end ( parentChromos ), sax::back_emplacer ( freeList ) );
+
 
         // Select the parents from the candidateChromos.
-        parentChromos.clear ( );
-        params.selectionScheme ( parentChromos, childrenChromos );
+        params.selectionScheme ( parentChromos, freeList, childrenChromos );
 
         // Create the children from the parents.
-        childrenChromos.clear ( );
-        params.reproductionScheme ( childrenChromos, parentChromos );
+        params.reproductionScheme ( childrenChromos, freeList, parentChromos );
     }
 
     // Deal with formatting for displaying progress.
-    if ( params.updateFrequency != 0 ) {
-        std::printf ( "\n" );
-    }
+    if ( 0 != params.updateFrequency != 0 )
+        std::cout << nl;
 
     bestChromo->generation = gen;
 
@@ -1096,50 +1115,50 @@ DLL_EXPORT struct chromosome *initialiseChromosomeFromChromosome ( struct chromo
     chromoNew = ( struct chromosome* )std::malloc ( sizeof ( struct chromosome ) );
 
     /* allocate memory for nodes */
-    chromoNew->nodes = ( struct node** )std::malloc ( chromo->numNodes * sizeof ( struct node* ) );
+    chromoNew->nodes = ( struct node** )std::malloc ( chromo_.numNodes * sizeof ( struct node* ) );
 
     /* allocate memory for outputNodes matrix */
-    chromoNew->outputNodes = ( int* ) std::malloc ( chromo->numOutputs * sizeof ( int ) );
+    chromoNew->outputNodes = ( int* ) std::malloc ( chromo_.numOutputs * sizeof ( int ) );
 
     /* allocate memory for active nodes matrix */
-    chromoNew->activeNodes = ( int* ) std::malloc ( chromo->numNodes * sizeof ( int ) );
+    chromoNew->activeNodes = ( int* ) std::malloc ( chromo_.numNodes * sizeof ( int ) );
 
     /* allocate memory for chromosome outputValues */
-    chromoNew->outputValues = ( double* ) std::malloc ( chromo->numOutputs * sizeof ( double ) );
+    chromoNew->outputValues = ( double* ) std::malloc ( chromo_.numOutputs * sizeof ( double ) );
 
     /* Initialise each of the chromosomes nodes */
-    for ( i = 0; i < chromo->numNodes; i++ ) {
-        chromoNew->nodes [ i ] = initialiseNode ( chromo->numInputs, chromo->numNodes, chromo->arity, chromo->functionSet->numFunctions, 0, 0, i );
-        copyNode ( chromoNew->nodes [ i ], chromo->nodes [ i ] );
+    for ( i = 0; i < chromo_.numNodes; i++ ) {
+        chromoNew->nodes [ i ] = initialiseNode ( chromo_.numInputs, chromo_.numNodes, chromo_.arity, chromo_.functionSet->numFunctions, 0, 0, i );
+        copyNode ( chromoNew->nodes [ i ], chromo_.nodes [ i ] );
     }
 
     /* set each of the chromosomes outputs */
-    for ( i = 0; i < chromo->numOutputs; i++ ) {
-        chromoNew->outputNodes [ i ] = chromo->outputNodes [ i ];
+    for ( i = 0; i < chromo_.numOutputs; i++ ) {
+        chromoNew->outputNodes [ i ] = chromo_.outputNodes [ i ];
     }
 
     /* set the number of inputs, nodes and outputs */
-    chromoNew->numInputs = chromo->numInputs;
-    chromoNew->numNodes = chromo->numNodes;
-    chromoNew->numOutputs = chromo->numOutputs;
-    chromoNew->arity = chromo->arity;
+    chromoNew->numInputs = chromo_.numInputs;
+    chromoNew->numNodes = chromo_.numNodes;
+    chromoNew->numOutputs = chromo_.numOutputs;
+    chromoNew->arity = chromo_.arity;
 
 
     /* copy over the chromsosme fitness */
-    chromoNew->fitness = chromo->fitness;
+    chromoNew->fitness = chromo_.fitness;
 
     /* copy over the number of gnerations to find a solution */
-    chromoNew->generation = chromo->generation;
+    chromoNew->generation = chromo_.generation;
 
     /* copy over the functionset */
     chromoNew->functionSet = ( struct functionSet* )std::malloc ( sizeof ( struct functionSet ) );
-    copyFunctionSet ( chromoNew->functionSet, chromo->functionSet );
+    copyFunctionSet ( chromoNew->functionSet, chromo_.functionSet );
 
     /* set the active nodes in the newly generated chromosome */
     setActiveNodes ( chromoNew );
 
     /* used internally by exicute chromosome */
-    chromoNew->nodeInputsHold = ( double* ) std::malloc ( chromo->arity * sizeof ( double ) );
+    chromoNew->nodeInputsHold = ( double* ) std::malloc ( chromo_.arity * sizeof ( double ) );
 
     return chromoNew;
 }
@@ -1151,12 +1170,12 @@ DLL_EXPORT struct chromosome *initialiseChromosomeFromChromosome ( struct chromo
 */
 DLL_EXPORT double getChromosomeOutput ( struct chromosome *chromo, int output ) {
 
-    if ( output < 0 or output > chromo->numOutputs ) {
+    if ( output < 0 or output > chromo_.numOutputs ) {
         printf ( "Error: output less than or greater than the number of chromosome outputs. Called from getChromosomeOutput.\n" );
         exit ( 0 );
     }
 
-    return chromo->outputValues [ output ];
+    return chromo_.outputValues [ output ];
 }
 
 
@@ -1166,12 +1185,12 @@ DLL_EXPORT double getChromosomeOutput ( struct chromosome *chromo, int output ) 
     has been called
 */
 DLL_EXPORT double getChromosomeNodeValue ( struct chromosome *chromo, int node ) {
-    if ( node < 0 or node > chromo->numNodes ) {
+    if ( node < 0 or node > chromo_.numNodes ) {
         printf ( "Error: node less than or greater than the number of nodes  in chromosome. Called from getChromosomeNodeValue.\n" );
         exit ( 0 );
     }
 
-    return chromo->nodes [ node ]->output;
+    return chromo_.nodes [ node ]->output;
 }
 
 
@@ -1277,7 +1296,7 @@ DLL_EXPORT void setChromosomeFitness ( struct parameters *params, struct chromos
 
     fitness = params.fitnessFunction ( params, chromo, data );
 
-    chromo->fitness = fitness;
+    chromo_.fitness = fitness;
 }
 
 
@@ -1288,8 +1307,8 @@ DLL_EXPORT void resetChromosome ( struct chromosome *chromo ) {
 
     int i;
 
-    for ( i = 0; i < chromo->numNodes; i++ ) {
-        chromo->nodes [ i ]->output = 0;
+    for ( i = 0; i < chromo_.numNodes; i++ ) {
+        chromo_.nodes [ i ]->output = 0;
     }
 }
 
@@ -1297,28 +1316,28 @@ DLL_EXPORT void resetChromosome ( struct chromosome *chromo ) {
     Gets the number of chromosome inputs
 */
 DLL_EXPORT int getNumChromosomeInputs ( struct chromosome *chromo ) {
-    return chromo->numInputs;
+    return chromo_.numInputs;
 }
 
 /*
     Gets the number of chromosome nodes
 */
 DLL_EXPORT int getNumChromosomeNodes ( struct chromosome *chromo ) {
-    return chromo->numNodes;
+    return chromo_.numNodes;
 }
 
 /*
     Gets the number of chromosome active nodes
 */
 DLL_EXPORT int getNumChromosomeActiveNodes ( struct chromosome *chromo ) {
-    return chromo->numActiveNodes;
+    return chromo_.numActiveNodes;
 }
 
 /*
     Gets the number of chromosome outputs
 */
 DLL_EXPORT int getNumChromosomeOutputs ( struct chromosome *chromo ) {
-    return chromo->numOutputs;
+    return chromo_.numOutputs;
 }
 
 /*
@@ -1326,8 +1345,8 @@ DLL_EXPORT int getNumChromosomeOutputs ( struct chromosome *chromo ) {
 */
 DLL_EXPORT int getChromosomeNodeArity ( struct chromosome *chromo, int index ) {
 
-    int chromoArity = chromo->arity;
-    int maxArity = chromo->functionSet->numInputs [ chromo->nodes [ index ]->function ];
+    int chromoArity = chromo_.arity;
+    int maxArity = chromo_.functionSet->numInputs [ chromo_.nodes [ index ]->function ];
 
     if ( maxArity == -1 ) {
         return chromoArity;
@@ -1344,7 +1363,7 @@ DLL_EXPORT int getChromosomeNodeArity ( struct chromosome *chromo, int index ) {
     Gets the chromosome fitness
 */
 DLL_EXPORT double getChromosomeFitness ( struct chromosome *chromo ) {
-    return chromo->fitness;
+    return chromo_.fitness;
 }
 
 /*
@@ -1355,8 +1374,8 @@ DLL_EXPORT int getNumChromosomeActiveConnections ( struct chromosome *chromo ) {
     int i;
     int complexity = 0;
 
-    for ( i = 0; i < chromo->numActiveNodes; i++ ) {
-        complexity += chromo->nodes [ chromo->activeNodes [ i ] ]->arity;
+    for ( i = 0; i < chromo_.numActiveNodes; i++ ) {
+        complexity += chromo_.nodes [ chromo_.activeNodes [ i ] ]->arity;
     }
 
     return complexity;
@@ -1366,7 +1385,7 @@ DLL_EXPORT int getNumChromosomeActiveConnections ( struct chromosome *chromo ) {
     Gets the number of generations required to find the given chromosome
 */
 DLL_EXPORT int getChromosomeGenerations ( struct chromosome *chromo ) {
-    return chromo->generation;
+    return chromo_.generation;
 }
 
 
@@ -1833,22 +1852,22 @@ static void pointMutation ( struct parameters *params, struct chromosome *chromo
 
             nodeIndex = geneToMutate;
 
-            chromo->nodes [ nodeIndex ]->function = getRandomFunction ( chromo->functionSet->numFunctions );
+            chromo_.nodes [ nodeIndex ]->function = getRandomFunction ( chromo_.functionSet->numFunctions );
         }
 
         /* mutate node input gene */
         else if ( geneToMutate < numFunctionGenes + numInputGenes ) {
 
-            nodeIndex = ( int ) ( ( geneToMutate - numFunctionGenes ) / chromo->arity );
-            nodeInputIndex = ( geneToMutate - numFunctionGenes ) % chromo->arity;
+            nodeIndex = ( int ) ( ( geneToMutate - numFunctionGenes ) / chromo_.arity );
+            nodeInputIndex = ( geneToMutate - numFunctionGenes ) % chromo_.arity;
 
-            chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, nodeIndex, params.recurrentConnectionProbability );
+            chromo_.nodes [ nodeIndex ]->inputs [ nodeInputIndex ] = getRandomNodeInput ( chromo_.numInputs, chromo_.numNodes, nodeIndex, params.recurrentConnectionProbability );
         }
 
         /* mutate output gene */
         else {
             nodeIndex = geneToMutate - numFunctionGenes - numInputGenes;
-            chromo->outputNodes [ nodeIndex ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params.shortcutConnections );
+            chromo_.outputNodes [ nodeIndex ] = getRandomChromosomeOutput ( chromo_.numInputs, chromo_.numNodes, params.shortcutConnections );
         }
     }
 }
@@ -1890,13 +1909,13 @@ static void singleMutation ( struct parameters *params, struct chromosome *chrom
 
             nodeIndex = geneToMutate;
 
-            previousGeneValue = chromo->nodes [ nodeIndex ]->function;
+            previousGeneValue = chromo_.nodes [ nodeIndex ]->function;
 
-            chromo->nodes [ nodeIndex ]->function = getRandomFunction ( chromo->functionSet->numFunctions );
+            chromo_.nodes [ nodeIndex ]->function = getRandomFunction ( chromo_.functionSet->numFunctions );
 
-            newGeneValue = chromo->nodes [ nodeIndex ]->function;
+            newGeneValue = chromo_.nodes [ nodeIndex ]->function;
 
-            if ( ( previousGeneValue != newGeneValue ) and ( chromo->nodes [ nodeIndex ]->active == 1 ) ) {
+            if ( ( previousGeneValue != newGeneValue ) and ( chromo_.nodes [ nodeIndex ]->active == 1 ) ) {
                 mutatedActive = 1;
             }
 
@@ -1905,16 +1924,16 @@ static void singleMutation ( struct parameters *params, struct chromosome *chrom
         /* mutate node input gene */
         else if ( geneToMutate < numFunctionGenes + numInputGenes ) {
 
-            nodeIndex = ( int ) ( ( geneToMutate - numFunctionGenes ) / chromo->arity );
-            nodeInputIndex = ( geneToMutate - numFunctionGenes ) % chromo->arity;
+            nodeIndex = ( int ) ( ( geneToMutate - numFunctionGenes ) / chromo_.arity );
+            nodeInputIndex = ( geneToMutate - numFunctionGenes ) % chromo_.arity;
 
-            previousGeneValue = chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ];
+            previousGeneValue = chromo_.nodes [ nodeIndex ]->inputs [ nodeInputIndex ];
 
-            chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, nodeIndex, params.recurrentConnectionProbability );
+            chromo_.nodes [ nodeIndex ]->inputs [ nodeInputIndex ] = getRandomNodeInput ( chromo_.numInputs, chromo_.numNodes, nodeIndex, params.recurrentConnectionProbability );
 
-            newGeneValue = chromo->nodes [ nodeIndex ]->inputs [ nodeInputIndex ];
+            newGeneValue = chromo_.nodes [ nodeIndex ]->inputs [ nodeInputIndex ];
 
-            if ( ( previousGeneValue != newGeneValue ) and ( chromo->nodes [ nodeIndex ]->active == 1 ) ) {
+            if ( ( previousGeneValue != newGeneValue ) and ( chromo_.nodes [ nodeIndex ]->active == 1 ) ) {
                 mutatedActive = 1;
             }
         }
@@ -1923,11 +1942,11 @@ static void singleMutation ( struct parameters *params, struct chromosome *chrom
         else {
             nodeIndex = geneToMutate - numFunctionGenes - numInputGenes;
 
-            previousGeneValue = chromo->outputNodes [ nodeIndex ];
+            previousGeneValue = chromo_.outputNodes [ nodeIndex ];
 
-            chromo->outputNodes [ nodeIndex ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params.shortcutConnections );
+            chromo_.outputNodes [ nodeIndex ] = getRandomChromosomeOutput ( chromo_.numInputs, chromo_.numNodes, params.shortcutConnections );
 
-            newGeneValue = chromo->outputNodes [ nodeIndex ];
+            newGeneValue = chromo_.outputNodes [ nodeIndex ];
 
             if ( previousGeneValue != newGeneValue ) {
                 mutatedActive = 1;
@@ -1949,13 +1968,13 @@ static void probabilisticMutationOnlyActive ( struct parameters *params, struct 
     int activeNode;
 
     /* for every active node in the chromosome */
-    for ( i = 0; i < chromo->numActiveNodes; i++ ) {
+    for ( i = 0; i < chromo_.numActiveNodes; i++ ) {
 
-        activeNode = chromo->activeNodes [ i ];
+        activeNode = chromo_.activeNodes [ i ];
 
         /* mutate the function gene */
         if ( randDecimal ( ) <= params.mutationRate ) {
-            chromo->nodes [ activeNode ]->function = getRandomFunction ( chromo->functionSet->numFunctions );
+            chromo_.nodes [ activeNode ]->function = getRandomFunction ( chromo_.functionSet->numFunctions );
         }
 
         /* for every input to each chromosome */
@@ -1963,12 +1982,12 @@ static void probabilisticMutationOnlyActive ( struct parameters *params, struct 
 
             /* mutate the node input */
             if ( randDecimal ( ) <= params.mutationRate ) {
-                chromo->nodes [ activeNode ]->inputs [ j ] = getRandomNodeInput ( chromo->numInputs, chromo->numNodes, activeNode, params.recurrentConnectionProbability );
+                chromo_.nodes [ activeNode ]->inputs [ j ] = getRandomNodeInput ( chromo_.numInputs, chromo_.numNodes, activeNode, params.recurrentConnectionProbability );
             }
 
             /* mutate the node connection weight */
             if ( randDecimal ( ) <= params.mutationRate ) {
-                chromo->nodes [ activeNode ]->weights [ j ] = getRandomConnectionWeight ( params.connectionWeightRange );
+                chromo_.nodes [ activeNode ]->weights [ j ] = getRandomConnectionWeight ( params.connectionWeightRange );
             }
         }
     }
@@ -1978,7 +1997,7 @@ static void probabilisticMutationOnlyActive ( struct parameters *params, struct 
 
         /* mutate the chromosome output */
         if ( randDecimal ( ) <= params.mutationRate ) {
-            chromo->outputNodes [ i ] = getRandomChromosomeOutput ( chromo->numInputs, chromo->numNodes, params.shortcutConnections );
+            chromo_.outputNodes [ i ] = getRandomChromosomeOutput ( chromo_.numInputs, chromo_.numNodes, params.shortcutConnections );
         }
     }
 }

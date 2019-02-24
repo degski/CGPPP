@@ -185,6 +185,10 @@ struct FunctionSet {
 
     int size = 0;
 
+    [[ nodiscard ]] int getRandomFunction ( ) const noexcept {
+        return Rng::randInt ( size );
+    }
+
     friend class cereal::access;
 
     template<typename Archive>

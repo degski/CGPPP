@@ -83,7 +83,19 @@ Stream & operator << ( Stream & out_, const chr & v_ ) noexcept {
 
 int main ( ) {
 
-    cgp::generateCostTable<float> ( );
+    stl::vector<int> a { 0, 1, 2, 3, 4, 5, 6 };
+    stl::vector<int> b { 7, 8, 9, 10 };
+
+    std::cout << a << nl;
+    std::cout << b << nl;
+
+    a = std::move ( b );
+
+    std::cout << a << nl;
+    std::cout << b << nl;
+
+    std::cout << b.capacity ( ) << nl;
+
 
     /*
 
