@@ -577,12 +577,36 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept {
 }
 
 
+// Conductions probabilistic mutation on the active nodes in the given
+// chromosome. Each chromosome gene is changed to a random valid allele
+// with a probability specified in parameters.
+template<typename Real>
+void probabilisticMutationOnlyActive ( Chromosome<Real> & chromo_ ) noexcept {
+    int nodePosition = 0;
+    for ( auto & node : chromo_.nodes ) {
+        if ( node.active ) {
+            // Mutate the function gene.
+            if ( params.mutate ( ) )
+                node.function = functionSet.getRandomFunction ( );
+            for ( auto & input : node.inputs ) {
+                if ( params.mutate ( ) )
+                    input = params.getRandomNodeInput ( nodePosition );
+            }
+        }
+        ++nodePosition;
+    }
+    for ( auto & output : chromo_.outputNodes ) {
+        if ( params.mutate ( ) )
+            output = params.getRandomChromosomeOutput ( );
+    }
+}
+
 
 // Conductions point mutation on the give chromosome. A predetermined
 // number of chromosome genes are randomly selected and changed to
-// a random valid allele. The number of mutations is the number of chromosome
-// genes multiplied by the mutation rate. Each gene has equal probability
-// of being selected.
+// a random valid allele. The number of mutations is the number of
+// chromosome genes multiplied by the mutation rate. Each gene has
+// equal probability of being selected.
 template<typename Real>
 void pointMutation ( Chromosome<Real> & chromo_ ) noexcept {
     const int numInputGenes = params.numNodes * params.arity;
@@ -611,7 +635,7 @@ void pointMutation ( Chromosome<Real> & chromo_ ) noexcept {
 
 
 
-// Conductions a single active mutation on the give chromosome.
+// Conductions a single active mutation on the given chromosome.
 template<typename Real>
 void singleMutation ( Chromosome<Real> & chromo_ ) noexcept {
     const int numInputGenes = params.numNodes * params.arity;
