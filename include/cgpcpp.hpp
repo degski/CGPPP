@@ -99,7 +99,7 @@ void probabilisticMutation ( Chromosome<Real> & chromo_ ) noexcept;
 template<typename Real>
 Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) noexcept;
 template<typename Real>
-void selectFittest ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> & free_list_, ChromosomePtrVec<Real> & candidateChromos_ ) noexcept;
+void selectFittest ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> & free_list_, ChromosomePtrVec<Real> & children_ ) noexcept;
 template<typename Real>
 void mutateRandomParent ( ChromosomePtrVec<Real> & children_, ChromosomePtrVec<Real> & free_list_, const ChromosomePtrVec<Real> & parents_ ) noexcept;
 
@@ -127,7 +127,7 @@ struct Parameters {
     std::string mutationTypeName;
     Real ( * fitnessFunction ) ( Chromosome<Real> & chromo_, const DataSet & data_ );
     std::string fitnessFunctionName;
-    void ( * selectionScheme ) ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> & free_list_, ChromosomePtrVec<Real> & candidateChromos_ );
+    void ( * selectionScheme ) ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> & free_list_, ChromosomePtrVec<Real> & children_ );
     std::string selectionSchemeName;
     void ( * reproductionScheme )( ChromosomePtrVec<Real> & children_, ChromosomePtrVec<Real> & free_list_, const ChromosomePtrVec<Real> & parents_ );
     std::string reproductionSchemeName;
@@ -465,7 +465,7 @@ struct Chromosome {
             if ( node.active ) {
                 static thread_local stl::vector<Real> in;
                 in.clear ( );
-                std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ & inputs_, this ] ( const int input ) noexcept {
+                std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ this, & inputs_ ] ( const int input ) noexcept {
                     in.push_back ( input < params.numInputs ? inputs_ [ input ] : nodes [ input - params.numInputs ].output );
                 } );
                 node.output = calc ( node.function, in );
@@ -492,12 +492,11 @@ struct Chromosome {
      // Used by setActiveNodes to recursively search for active nodes.
     void setActiveNodes ( int nodeIndex_ ) noexcept {
         nodeIndex_ -= params.numInputs;
-        auto & node = nodes [ nodeIndex_ ];
-        // If the given node is an input or has already been flagged as active, stop.
-        assert ( nodeIndex_ < 0 ); // figuring out if first check is required.
-        if ( nodeIndex_ < 0 or node.active )
+        if ( nodeIndex_ < 0 )
             return;
-        // Log the node as active.
+        auto & node = nodes [ nodeIndex_ ];
+        if ( node.active )
+            return;
         node.activate ( );
         std::for_each ( std::begin ( node.inputs ), std::begin ( node.inputs ) + node.arity, [ this ] ( const int index ) noexcept { setActiveNodes ( index ); } );
     }
@@ -683,19 +682,17 @@ Real supervisedLearning ( Chromosome<Real> & chromo_, const DataSet & data_ ) no
 
 
 // Selection scheme which selects the fittest members of the population
-// to be the parents.
-//
-// The candidateChromos contains the current children followed by the
-// current parents. This means that using a stable sort to order
+// to be the parents. The children_ contain the current children followed
+// by the current parents. This means that using a stable sort to order
 // candidateChromos results in children being selected over parents if
 // their fitnesses are equal. A desirable property in CGPPP to
 // facilitate neutral genetic drift.
 template<typename Real>
-void selectFittest ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> & free_list_, ChromosomePtrVec<Real> & candidateChromos_ ) noexcept {
-    std::stable_sort ( std::execution::par_unseq, std::begin ( candidateChromos_ ), std::end ( candidateChromos_ ), [ ] ( const ChromosomePtr<Real> & a, const ChromosomePtr<Real> & b ) noexcept { return a->fitness < b->fitness; } );
-    std::move ( std::begin ( candidateChromos_ ) + params.mu, std::end ( candidateChromos_ ), sax::back_emplacer ( free_list_ ) );
-    candidateChromos_.resize ( params.mu );
-    std::swap ( parents_, candidateChromos_ );
+void selectFittest ( ChromosomePtrVec<Real> & parents_, ChromosomePtrVec<Real> & free_list_, ChromosomePtrVec<Real> & children_ ) noexcept {
+    std::stable_sort ( std::execution::par_unseq, std::begin ( children_ ), std::end ( children_ ), [ ] ( const ChromosomePtr<Real> & a, const ChromosomePtr<Real> & b ) noexcept { return a->fitness < b->fitness; } );
+    std::move ( std::begin ( children_ ) + params.mu, std::end ( children_ ), sax::back_emplacer ( free_list_ ) );
+    children_.resize ( params.mu ); // Remove the now nullptr's.
+    std::swap ( parents_, children_ ); // Keep the allocated memeory (of parents_), but zero size.
 }
 
 
