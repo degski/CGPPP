@@ -267,41 +267,61 @@ struct sintor {
     }
 
     [[ nodiscard ]] size_type size ( ) const noexcept {
-        return SIZE ( m_data );
+        if ( m_data )
+            return SIZE ( m_data );
+        return 0;
     }
     [[ nodiscard ]] size_type capacity ( ) const noexcept {
-        return CAPACITY ( m_data );
+        if ( m_data )
+            return CAPACITY ( m_data );
+        return 0;
     }
 
     [[ nodiscard ]] bool empty ( ) const noexcept {
-        return not ( SIZE ( m_data ) );
+        if ( m_data )
+            return not ( SIZE ( m_data ) );
+        return true;
     }
 
     void resize ( const size_type n_ ) {
-        if ( CAPACITY ( m_data ) < n_ )
-            m_data = realloc ( n_ );
-        else
+        if ( m_data ) {
+            if ( CAPACITY ( m_data ) < n_ )
+                m_data = realloc ( n_ );
+            else
+                SIZE ( m_data ) = n_;
+        }
+        else {
+            m_data = alloc ( n_ );
             SIZE ( m_data ) = n_;
+        }
     }
 
     void clear ( ) noexcept {
-        SIZE ( m_data ) = 0;
+        if ( m_data ) {
+            SIZE ( m_data ) = 0;
+        }
     }
 
     void reserve ( const size_type n_ ) {
-        if ( CAPACITY ( m_data ) < n_ )
-            m_data = realloc ( n_ );
+        if ( m_data ) {
+            if ( CAPACITY ( m_data ) < n_ )
+                m_data = realloc ( n_ );
+        }
+        else {
+            m_data = alloc ( n_ );
+            SIZE ( m_data ) = n_;
+        }
     }
 
     [[ nodiscard ]] bool operator == ( const sintor & rhs_ ) const noexcept {
-        if ( SIZE ( m_data ) != rhs_.size ( ) )
+        if ( not ( m_data ) and not ( rhs_.m_data ) )
+            return true;
+        else if ( ( m_data and not ( rhs_.m_data ) ) or ( not ( m_data ) and rhs_.m_data ) or ( SIZE ( m_data ) != rhs_.size ( ) ) )
             return false;
         return not ( std::memcmp ( data ( ), rhs_.data ( ), sizeof ( value_type ) * SIZE ( m_data ) ) );
     }
     [[ nodiscard ]] bool operator != ( const sintor & rhs_ ) const noexcept {
-        if ( SIZE ( m_data ) != rhs_.size ( ) )
-            return true;
-        return std::memcmp ( data ( ), rhs_.data ( ), sizeof ( value_type ) * SIZE ( m_data ) );
+        return not ( operator == ( rhs_ ) );
     }
 
     [[ nodiscard ]] iterator begin ( ) noexcept { return iterator ( m_data ); }
