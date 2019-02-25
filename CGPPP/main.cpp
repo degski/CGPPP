@@ -81,21 +81,17 @@ Stream & operator << ( Stream & out_, const chr & v_ ) noexcept {
 #include "../include/random.hpp"
 
 
+#include <cstdio>
+#include <cstdlib>
+
+
 int main ( ) {
 
-    stl::vector<int> a { 0, 1, 2, 3, 4, 5, 6 };
-    stl::vector<int> b { 7, 8, 9, 10 };
+    stl::sintor<int> a ( 5 );
+
+    a [ 2 ] = 123;
 
     std::cout << a << nl;
-    std::cout << b << nl;
-
-    a = std::move ( b );
-
-    std::cout << a << nl;
-    std::cout << b << nl;
-
-    std::cout << b.capacity ( ) << nl;
-
 
     /*
 

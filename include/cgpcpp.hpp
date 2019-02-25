@@ -452,10 +452,10 @@ struct Chromosome {
             std::cout << "This should not happen, fix the above function returning the NAN" << nl;
             std::cout << "Terminating CGPPP-Library" << nl;
             std::abort ( );
+            return std::numeric_limits<Real>::quiet_NaN ( );
         }
-        #else
-        return std::numeric_limits<Real>::quiet_NaN ( );
         #endif
+        return std::numeric_limits<Real>::quiet_NaN ( );
     }
 
     // Executes this chromosome.
