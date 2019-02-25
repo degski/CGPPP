@@ -151,8 +151,14 @@ struct sintor {
     }
     sintor ( const sintor & other_ ) :
         m_data ( alloc ( other_.size ( ) ) ) {
-        SIZE ( other_.size ( ) );
+        SIZE ( m_data ) = CAPACITY ( m_data );
         std::memcpy ( m_data, other_.m_data, sizeof ( value_type ) * SIZE ( m_data ) );
+    }
+    template<typename It>
+    sintor ( It b_, It e_ ) :
+         m_data ( alloc ( static_cast< size_type > ( std::distance ( b_, e_ ) ) ) ) {
+         SIZE ( m_data ) = CAPACITY ( m_data );
+         std::uninitialized_copy ( b_, e_, begin ( ) );
     }
 
     ~sintor ( ) {
@@ -303,6 +309,10 @@ struct sintor {
     }
 };
 
+
+#undef ALIGNED_FREE
+#undef ALIGNED_REALLOC
+#undef ALIGNED_MALLOC
 
 #undef SIZE
 #undef CAPACITY
