@@ -152,7 +152,7 @@ struct sintor {
     sintor ( const sintor & other_ ) :
         m_data ( alloc ( other_.size ( ) ) ) {
         SIZE ( other_.size ( ) );
-        std::memcpy ( m_data, other_.m_data, sizeof ( value_type ) * size ( ) );
+        std::memcpy ( m_data, other_.m_data, sizeof ( value_type ) * SIZE ( m_data ) );
     }
 
     ~sintor ( ) {
@@ -165,12 +165,12 @@ struct sintor {
         return * this;
     }
     [[ maybe_unused ]] sintor & operator = ( const sintor & other_ ) {
-        if ( capacity ( ) < other_.size ( ) ) {
+        if ( CAPACITY ( m_data ) < other_.size ( ) ) {
             free ( );
             m_data = alloc ( other_.size ( ) );
         }
         SIZE ( other_.size ( ) );
-        std::memcpy ( m_data, other_.m_data, sizeof ( value_type ) * size ( ) );
+        std::memcpy ( m_data, other_.m_data, sizeof ( value_type ) * SIZE ( m_data ) );
         return *this;
     }
 
@@ -238,7 +238,7 @@ struct sintor {
     }
 
     void resize ( const size_type n_ ) {
-        if ( capacity ( ) < n_ )
+        if ( CAPACITY ( m_data ) < n_ )
             m_data = realloc ( n_ );
         else
             SIZE ( m_data ) = n_;
@@ -249,19 +249,19 @@ struct sintor {
     }
 
     void reserve ( const size_type n_ ) {
-        if ( capacity ( ) < n_ )
+        if ( CAPACITY ( m_data ) < n_ )
             m_data = realloc ( n_ );
     }
 
     [[ nodiscard ]] bool operator == ( const sintor & rhs_ ) const noexcept {
-        if ( size ( ) != rhs_.size ( ) )
+        if ( SIZE ( m_data ) != rhs_.size ( ) )
             return false;
-        return not ( std::memcmp ( data ( ), rhs_.data ( ), sizeof ( value_type ) * size ( ) ) );
+        return not ( std::memcmp ( data ( ), rhs_.data ( ), sizeof ( value_type ) * SIZE ( m_data ) ) );
     }
     [[ nodiscard ]] bool operator != ( const sintor & rhs_ ) const noexcept {
-        if ( size ( ) != rhs_.size ( ) )
+        if ( SIZE ( m_data ) != rhs_.size ( ) )
             return true;
-        return std::memcmp ( data ( ), rhs_.data ( ), sizeof ( value_type ) * size ( ) );
+        return std::memcmp ( data ( ), rhs_.data ( ), sizeof ( value_type ) * SIZE ( m_data ) );
     }
 
     [[ nodiscard ]] iterator begin ( ) noexcept { return iterator ( m_data ); }
