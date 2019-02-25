@@ -47,6 +47,40 @@ using Float = float;
 #include <cereal/types/vector.hpp>
 #endif
 
+
+#include <cereal/cereal.hpp>
+
+namespace stl {
+
+template<typename Type>
+using is_signed_integral = std::conjunction<std::is_integral<Type>, std::is_signed<Type>>;
+
+template<typename Type, typename SFINAE = typename std::enable_if<is_signed_integral<Type>::value>::type>
+struct sintor;
+
+}
+
+namespace cereal {
+
+template <class Archive, class T, typename SFINAE = typename std::enable_if<stl::is_signed_integral<T>::value>::type> inline
+typename std::enable_if<traits::is_output_serializable<BinaryData<T>, Archive>::value and stl::is_signed_integral<T>::value, void>::type
+    CEREAL_SAVE_FUNCTION_NAME ( Archive & ar, stl::sintor<T, SFINAE> const & sintor ) {
+    ar ( make_size_tag ( static_cast<size_type> ( sintor.size ( ) ) ) ); // number of elements
+    ar ( binary_data ( sintor.data ( ) - 2, ( sintor.size ( ) + 2 ) * sizeof ( T ) ) );
+}
+
+template <class Archive, class T, typename SFINAE = typename std::enable_if<stl::is_signed_integral<T>::value>::type> inline
+typename std::enable_if<traits::is_input_serializable<BinaryData<T>, Archive>::value and stl::is_signed_integral<T>::value, void>::type
+    CEREAL_LOAD_FUNCTION_NAME ( Archive & ar, stl::sintor<T, SFINAE> & sintor ) {
+    size_type sintorSize;
+    ar ( make_size_tag ( sintorSize ) );
+    sintor.resize ( static_cast<std::size_t> ( sintorSize ) );
+    ar ( binary_data ( sintor.data ( ) - 2, ( static_cast<std::size_t> ( sintorSize ) + 2 ) * sizeof ( T ) ) );
+}
+
+} // namespace cereal
+
+
 namespace stl {
 
 #if defined ( USE_PECTOR )
@@ -114,7 +148,7 @@ bool operator != ( const detail::null_allocator<T> &, const detail::null_allocat
 
 
 // A simplified dynamic vector of minimal foot-print for storing signed integers.
-template<typename Type, typename = typename std::enable_if<std::conjunction<std::is_integral<Type>, std::is_signed<Type>>::value>::type>
+template<typename Type, typename SFINAE>
 struct sintor {
 
     using value_type = Type;
