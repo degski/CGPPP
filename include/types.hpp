@@ -190,7 +190,7 @@ struct sintor {
     }
     template<typename It>
     sintor ( It b_, It e_ ) :
-         m_data ( alloc ( static_cast< size_type > ( std::distance ( b_, e_ ) ) ) ) {
+         m_data ( alloc ( static_cast<size_type> ( std::distance ( b_, e_ ) ) ) ) {
          SIZE ( m_data ) = CAPACITY ( m_data );
          std::uninitialized_copy ( b_, e_, begin ( ) );
     }
@@ -214,9 +214,11 @@ struct sintor {
         return *this;
     }
 
+    // UB, iff sinter un-allocated, or out-of-bounds.
     [[ nodiscard ]] reference operator [ ] ( const size_type i_ ) noexcept {
         return m_data [ i_ ];
     }
+    // UB, iff sinter un-allocated, or out-of-bounds.
     [[ nodiscard ]] const_reference operator [ ] ( const size_type i_ ) const noexcept {
         return m_data [ i_ ];
     }
@@ -259,9 +261,11 @@ struct sintor {
         return m_data;
     }
 
+    // UB, iff sinter un-allocated.
     [[ nodiscard ]] reference back ( ) noexcept {
         return m_data + SIZE ( m_data ) - 1;
     }
+    // UB, iff sinter un-allocated.
     [[ nodiscard ]] const_reference back ( ) const noexcept {
         return m_data + SIZE ( m_data ) - 1;
     }
