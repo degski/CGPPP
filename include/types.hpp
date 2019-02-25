@@ -287,7 +287,7 @@ struct sintor {
     [[ nodiscard ]] const_iterator crend ( ) const noexcept { return const_iterator ( m_data - 1 ); }
 
 
-    static size_type max_size ( ) noexcept {
+    [[ nodiscard ]] static constexpr size_type max_size ( ) noexcept {
         return std::numeric_limits<difference_type>::max ( ) - 3;
     }
 
