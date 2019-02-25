@@ -72,9 +72,9 @@ typename std::enable_if<traits::is_output_serializable<BinaryData<T>, Archive>::
 template <class Archive, class T, typename SFINAE = typename std::enable_if<stl::is_signed_integral<T>::value>::type> inline
 typename std::enable_if<traits::is_input_serializable<BinaryData<T>, Archive>::value and stl::is_signed_integral<T>::value, void>::type
     CEREAL_LOAD_FUNCTION_NAME ( Archive & ar, stl::sintor<T, SFINAE> & sintor ) {
-    size_type sintorSize;
+    typename stl::sintor<T, SFINAE>::size_type sintorSize;
     ar ( make_size_tag ( sintorSize ) );
-    sintor.resize ( static_cast<std::size_t> ( sintorSize ) );
+    sintor.resize ( sintorSize );
     ar ( binary_data ( sintor.data ( ) - 2, ( static_cast<std::size_t> ( sintorSize ) + 2 ) * sizeof ( T ) ) );
 }
 
