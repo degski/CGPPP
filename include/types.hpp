@@ -328,21 +328,21 @@ struct sintor {
         return not ( operator == ( rhs_ ) );
     }
 
-    [[ nodiscard ]] iterator begin ( ) noexcept { return iterator ( m_data ); }
-    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return const_iterator ( m_data ); }
-    [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return const_iterator ( m_data ); }
+    [[ nodiscard ]] iterator begin ( ) noexcept { return static_cast<iterator> ( m_data ); }
+    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return static_cast<const_iterator> ( m_data ); }
+    [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return static_cast<const_iterator> ( m_data ); }
 
-    [[ nodiscard ]] iterator end ( ) noexcept { return iterator ( m_data + SIZE ( m_data ) ); }
-    [[ nodiscard ]] const_iterator end ( ) const noexcept { return const_iterator ( m_data + SIZE ( m_data ) ); }
-    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return const_iterator ( m_data + SIZE ( m_data ) ); }
+    [[ nodiscard ]] iterator end ( ) noexcept { return static_cast<iterator> ( m_data + SIZE ( m_data ) ); }
+    [[ nodiscard ]] const_iterator end ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE ( m_data ) ); }
+    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE ( m_data ) ); }
 
-    [[ nodiscard ]] iterator rbegin ( ) noexcept { return iterator ( m_data + SIZE ( m_data ) - 1 ); }
-    [[ nodiscard ]] const_iterator rbegin ( ) const noexcept { return const_iterator ( m_data + SIZE ( m_data ) - 1 ); }
-    [[ nodiscard ]] const_iterator crbegin ( ) const noexcept { return const_iterator ( m_data + SIZE ( m_data ) - 1 ); }
+    [[ nodiscard ]] iterator rbegin ( ) noexcept { return static_cast<iterator> ( m_data + SIZE ( m_data ) - 1 ); }
+    [[ nodiscard ]] const_iterator rbegin ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE ( m_data ) - 1 ); }
+    [[ nodiscard ]] const_iterator crbegin ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE ( m_data ) - 1 ); }
 
-    [[ nodiscard ]] iterator rend ( ) noexcept { return iterator ( m_data - 1 ); }
-    [[ nodiscard ]] const_iterator rend ( ) const noexcept { return const_iterator ( m_data - 1 ); }
-    [[ nodiscard ]] const_iterator crend ( ) const noexcept { return const_iterator ( m_data - 1 ); }
+    [[ nodiscard ]] iterator rend ( ) noexcept { return static_cast<iterator> ( m_data - 1 ); }
+    [[ nodiscard ]] const_iterator rend ( ) const noexcept { return static_cast<const_iterator> ( m_data - 1 ); }
+    [[ nodiscard ]] const_iterator crend ( ) const noexcept { return static_cast<const_iterator> ( m_data - 1 ); }
 
 
     [[ nodiscard ]] static constexpr size_type max_size ( ) noexcept {
