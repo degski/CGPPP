@@ -355,7 +355,7 @@ struct sintor {
     }
     // Size is copied together with the data.
     [[ nodiscard ]] pointer realloc ( const size_type n_ ) const noexcept {
-        pointer p = static_cast<pointer> ( ALIGNED_REALLOC ( static_cast<void*> ( m_data - 2 ), alignof ( value_type ), sizeof ( value_type ) * ( n_ + 2 ) ) );
+        pointer p = static_cast<pointer> ( ALIGNED_REALLOC ( m_data - 2, alignof ( value_type ), sizeof ( value_type ) * ( n_ + 2 ) ) );
         p [ 0 ] = n_;
         return p + 2;
     }
