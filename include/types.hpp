@@ -209,9 +209,9 @@ struct sintor {
             free ( );
             m_data = alloc ( other_.size ( ) );
         }
-        SIZE ( other_.size ( ) );
+        SIZE = other_.size ( );
         std::memcpy ( m_data, other_.m_data, sizeof ( value_type ) * SIZE );
-        return *this;
+        return * this;
     }
 
     // UB, iff sinter un-allocated, or out-of-bounds.
@@ -227,30 +227,24 @@ struct sintor {
         if ( m_data ) {
             if ( SIZE == CAPACITY )
                 m_data = realloc ( CAPACITY + CAPACITY / 2 );
-            reference r = m_data [ SIZE ] = v_;
-            ++SIZE;
-            return r;
+            return m_data [ SIZE++ ] = v_;
         }
         else {
             m_data = alloc ( 2 );
-            reference r = m_data [ 0 ] = v_;
             SIZE = 1;
-            return r;
+            return m_data [ 0 ] = v_;
         }
     }
     [[ maybe_unused ]] reference emplace_back ( value_type && v_ ) {
         if ( m_data ) {
             if ( SIZE == CAPACITY )
                 m_data = realloc ( CAPACITY + CAPACITY / 2 );
-            reference r = m_data [ SIZE ] = std::move ( v_ );
-            ++SIZE;
-            return r;
+            return m_data [ SIZE++ ] = std::move ( v_ );
         }
         else {
             m_data = alloc ( 2 );
-            reference r = m_data [ 0 ] = std::move ( v_ );
             SIZE = 1;
-            return r;
+            return m_data [ 0 ] = std::move ( v_ );
         }
     }
 
@@ -262,29 +256,32 @@ struct sintor {
     }
 
     // UB, iff sinter un-allocated.
+    [[ nodiscard ]] reference front ( ) noexcept {
+        return m_data [ 0 ];
+    }
+    // UB, iff sinter un-allocated.
+    [[ nodiscard ]] const_reference front ( ) const noexcept {
+        return m_data [ 0 ];
+    }
+
+    // UB, iff sinter un-allocated.
     [[ nodiscard ]] reference back ( ) noexcept {
-        return m_data + SIZE - 1;
+        return m_data [ SIZE - 1 ];
     }
     // UB, iff sinter un-allocated.
     [[ nodiscard ]] const_reference back ( ) const noexcept {
-        return m_data + SIZE - 1;
+        return m_data [ SIZE - 1 ];
     }
 
     [[ nodiscard ]] size_type size ( ) const noexcept {
-        if ( m_data )
-            return SIZE;
-        return 0;
+        return m_data ? SIZE : 0;
     }
     [[ nodiscard ]] size_type capacity ( ) const noexcept {
-        if ( m_data )
-            return CAPACITY;
-        return 0;
+        return m_data ? CAPACITY : 0;
     }
 
     [[ nodiscard ]] bool empty ( ) const noexcept {
-        if ( m_data )
-            return not ( SIZE );
-        return true;
+        return m_data ? not ( SIZE ) : true;
     }
 
     void resize ( const size_type n_ ) {
@@ -301,9 +298,8 @@ struct sintor {
     }
 
     void clear ( ) noexcept {
-        if ( m_data ) {
+        if ( m_data )
             SIZE = 0;
-        }
     }
 
     void reserve ( const size_type n_ ) {
@@ -351,11 +347,13 @@ struct sintor {
 
     private:
 
+    // Always set size after call to alloc.
     [[ nodiscard ]] pointer alloc ( const size_type n_ ) const noexcept {
         pointer p = static_cast<pointer> ( ALIGNED_MALLOC ( alignof ( value_type ), sizeof ( value_type ) * ( n_ + 2 ) ) );
-        p [ 0 ] = n_; p [ 1 ] = 0;
+        p [ 0 ] = n_;
         return p + 2;
     }
+    // Size is copied together with the data.
     [[ nodiscard ]] pointer realloc ( const size_type n_ ) const noexcept {
         pointer p = static_cast<pointer> ( ALIGNED_REALLOC ( static_cast<void*> ( m_data - 2 ), alignof ( value_type ), sizeof ( value_type ) * ( n_ + 2 ) ) );
         p [ 0 ] = n_;

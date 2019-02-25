@@ -92,6 +92,8 @@ int main ( ) {
     a [ 2 ] = 123;
 
     a.emplace_back ( 456 );
+    a.emplace_back ( 789 );
+    a.emplace_back ( 12 );
 
     std::cout << a << nl;
 
