@@ -350,13 +350,13 @@ struct sintor {
     // Always set size after call to alloc.
     [[ nodiscard ]] pointer alloc ( const size_type n_ ) const noexcept {
         pointer p = static_cast<pointer> ( ALIGNED_MALLOC ( alignof ( value_type ), sizeof ( value_type ) * ( n_ + 2 ) ) );
-        p [ 0 ] = n_;
+        p [ 0 ] = static_cast<value_type> ( n_ );
         return p + 2;
     }
     // Size is copied together with the data.
     [[ nodiscard ]] pointer realloc ( const size_type n_ ) const noexcept {
         pointer p = static_cast<pointer> ( ALIGNED_REALLOC ( m_data - 2, alignof ( value_type ), sizeof ( value_type ) * ( n_ + 2 ) ) );
-        p [ 0 ] = n_;
+        p [ 0 ] = static_cast<value_type> ( n_ );
         return p + 2;
     }
     void free ( ) noexcept {
