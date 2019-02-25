@@ -91,7 +91,7 @@ struct Chromosome;
 template<typename Real>
 using ChromosomePtr = std::unique_ptr<Chromosome<Real>>;
 template<typename Real>
-using ChromosomePtrVec = stl::vector<ChromosomePtr<Real>>;
+using ChromosomePtrVec = std::vector<ChromosomePtr<Real>>;
 
 
 template<typename Real>
