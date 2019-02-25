@@ -133,8 +133,8 @@ bool operator != ( const detail::null_allocator<T> &, const detail::null_allocat
 }
 
 
-#define CAPACITY( D ) D [ -2 ]
-#define SIZE( D ) D [ -1 ]
+#define CAPACITY m_data [ -2 ]
+#define SIZE m_data [ -1 ]
 
 #if defined ( _DEBUG )
 #define ALIGNED_MALLOC(A,S) _aligned_malloc_dbg((S),(A),NULL,NULL)
@@ -177,7 +177,7 @@ struct sintor {
     // Creates a sintor of capacity n and size n;
     explicit sintor ( const size_type n_ ) :
         m_data ( alloc ( n_ ) ) {
-        SIZE ( m_data ) = n_;
+        SIZE = n_;
     }
     sintor ( sintor && other_ ) noexcept :
         m_data ( other_.m_data ) {
@@ -185,13 +185,13 @@ struct sintor {
     }
     sintor ( const sintor & other_ ) :
         m_data ( alloc ( other_.size ( ) ) ) {
-        SIZE ( m_data ) = CAPACITY ( m_data );
-        std::memcpy ( m_data, other_.m_data, sizeof ( value_type ) * SIZE ( m_data ) );
+        SIZE = CAPACITY;
+        std::memcpy ( m_data, other_.m_data, sizeof ( value_type ) * SIZE );
     }
     template<typename It>
     sintor ( It b_, It e_ ) :
          m_data ( alloc ( static_cast<size_type> ( std::distance ( b_, e_ ) ) ) ) {
-         SIZE ( m_data ) = CAPACITY ( m_data );
+         SIZE = CAPACITY;
          std::uninitialized_copy ( b_, e_, begin ( ) );
     }
 
@@ -205,12 +205,12 @@ struct sintor {
         return * this;
     }
     [[ maybe_unused ]] sintor & operator = ( const sintor & other_ ) {
-        if ( CAPACITY ( m_data ) < other_.size ( ) ) {
+        if ( CAPACITY < other_.size ( ) ) {
             free ( );
             m_data = alloc ( other_.size ( ) );
         }
         SIZE ( other_.size ( ) );
-        std::memcpy ( m_data, other_.m_data, sizeof ( value_type ) * SIZE ( m_data ) );
+        std::memcpy ( m_data, other_.m_data, sizeof ( value_type ) * SIZE );
         return *this;
     }
 
@@ -225,31 +225,31 @@ struct sintor {
 
     [[ maybe_unused ]] reference push_back ( const value_type & v_ ) {
         if ( m_data ) {
-            if ( SIZE ( m_data ) == CAPACITY ( m_data ) )
-                m_data = realloc ( CAPACITY ( m_data ) + CAPACITY ( m_data ) / 2 );
-            reference r = m_data [ SIZE ( m_data ) ] = v_;
-            ++SIZE ( m_data );
+            if ( SIZE == CAPACITY )
+                m_data = realloc ( CAPACITY + CAPACITY / 2 );
+            reference r = m_data [ SIZE ] = v_;
+            ++SIZE;
             return r;
         }
         else {
             m_data = alloc ( 2 );
             reference r = m_data [ 0 ] = v_;
-            SIZE ( m_data ) = 1;
+            SIZE = 1;
             return r;
         }
     }
     [[ maybe_unused ]] reference emplace_back ( value_type && v_ ) {
         if ( m_data ) {
-            if ( SIZE ( m_data ) == CAPACITY ( m_data ) )
-                m_data = realloc ( CAPACITY ( m_data ) + CAPACITY ( m_data ) / 2 );
-            reference r = m_data [ SIZE ( m_data ) ] = std::move ( v_ );
-            ++SIZE ( m_data );
+            if ( SIZE == CAPACITY )
+                m_data = realloc ( CAPACITY + CAPACITY / 2 );
+            reference r = m_data [ SIZE ] = std::move ( v_ );
+            ++SIZE;
             return r;
         }
         else {
             m_data = alloc ( 2 );
             reference r = m_data [ 0 ] = std::move ( v_ );
-            SIZE ( m_data ) = 1;
+            SIZE = 1;
             return r;
         }
     }
@@ -263,66 +263,66 @@ struct sintor {
 
     // UB, iff sinter un-allocated.
     [[ nodiscard ]] reference back ( ) noexcept {
-        return m_data + SIZE ( m_data ) - 1;
+        return m_data + SIZE - 1;
     }
     // UB, iff sinter un-allocated.
     [[ nodiscard ]] const_reference back ( ) const noexcept {
-        return m_data + SIZE ( m_data ) - 1;
+        return m_data + SIZE - 1;
     }
 
     [[ nodiscard ]] size_type size ( ) const noexcept {
         if ( m_data )
-            return SIZE ( m_data );
+            return SIZE;
         return 0;
     }
     [[ nodiscard ]] size_type capacity ( ) const noexcept {
         if ( m_data )
-            return CAPACITY ( m_data );
+            return CAPACITY;
         return 0;
     }
 
     [[ nodiscard ]] bool empty ( ) const noexcept {
         if ( m_data )
-            return not ( SIZE ( m_data ) );
+            return not ( SIZE );
         return true;
     }
 
     void resize ( const size_type n_ ) {
         if ( m_data ) {
-            if ( CAPACITY ( m_data ) < n_ )
+            if ( CAPACITY < n_ )
                 m_data = realloc ( n_ );
             else
-                SIZE ( m_data ) = n_;
+                SIZE = n_;
         }
         else {
             m_data = alloc ( n_ );
-            SIZE ( m_data ) = n_;
+            SIZE = n_;
         }
     }
 
     void clear ( ) noexcept {
         if ( m_data ) {
-            SIZE ( m_data ) = 0;
+            SIZE = 0;
         }
     }
 
     void reserve ( const size_type n_ ) {
         if ( m_data ) {
-            if ( CAPACITY ( m_data ) < n_ )
+            if ( CAPACITY < n_ )
                 m_data = realloc ( n_ );
         }
         else {
             m_data = alloc ( n_ );
-            SIZE ( m_data ) = n_;
+            SIZE = n_;
         }
     }
 
     [[ nodiscard ]] bool operator == ( const sintor & rhs_ ) const noexcept {
         if ( not ( m_data ) and not ( rhs_.m_data ) )
             return true;
-        else if ( ( m_data and not ( rhs_.m_data ) ) or ( not ( m_data ) and rhs_.m_data ) or ( SIZE ( m_data ) != rhs_.size ( ) ) )
+        else if ( ( m_data and not ( rhs_.m_data ) ) or ( not ( m_data ) and rhs_.m_data ) or ( SIZE != rhs_.size ( ) ) )
             return false;
-        return not ( std::memcmp ( data ( ), rhs_.data ( ), sizeof ( value_type ) * SIZE ( m_data ) ) );
+        return not ( std::memcmp ( data ( ), rhs_.data ( ), sizeof ( value_type ) * SIZE ) );
     }
     [[ nodiscard ]] bool operator != ( const sintor & rhs_ ) const noexcept {
         return not ( operator == ( rhs_ ) );
@@ -332,13 +332,13 @@ struct sintor {
     [[ nodiscard ]] const_iterator begin ( ) const noexcept { return static_cast<const_iterator> ( m_data ); }
     [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return static_cast<const_iterator> ( m_data ); }
 
-    [[ nodiscard ]] iterator end ( ) noexcept { return static_cast<iterator> ( m_data + SIZE ( m_data ) ); }
-    [[ nodiscard ]] const_iterator end ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE ( m_data ) ); }
-    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE ( m_data ) ); }
+    [[ nodiscard ]] iterator end ( ) noexcept { return static_cast<iterator> ( m_data + SIZE ); }
+    [[ nodiscard ]] const_iterator end ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE ); }
+    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE ); }
 
-    [[ nodiscard ]] iterator rbegin ( ) noexcept { return static_cast<iterator> ( m_data + SIZE ( m_data ) - 1 ); }
-    [[ nodiscard ]] const_iterator rbegin ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE ( m_data ) - 1 ); }
-    [[ nodiscard ]] const_iterator crbegin ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE ( m_data ) - 1 ); }
+    [[ nodiscard ]] iterator rbegin ( ) noexcept { return static_cast<iterator> ( m_data + SIZE - 1 ); }
+    [[ nodiscard ]] const_iterator rbegin ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE - 1 ); }
+    [[ nodiscard ]] const_iterator crbegin ( ) const noexcept { return static_cast<const_iterator> ( m_data + SIZE - 1 ); }
 
     [[ nodiscard ]] iterator rend ( ) noexcept { return static_cast<iterator> ( m_data - 1 ); }
     [[ nodiscard ]] const_iterator rend ( ) const noexcept { return static_cast<const_iterator> ( m_data - 1 ); }
