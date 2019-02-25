@@ -62,14 +62,14 @@ struct sintor;
 
 namespace cereal {
 
-template <class Archive, class T, typename SFINAE = typename std::enable_if<stl::is_signed_integral<T>::value>::type> inline
+template <typename Archive, typename T, typename SFINAE = typename std::enable_if<stl::is_signed_integral<T>::value>::type> inline
 typename std::enable_if<traits::is_output_serializable<BinaryData<T>, Archive>::value and stl::is_signed_integral<T>::value, void>::type
     CEREAL_SAVE_FUNCTION_NAME ( Archive & ar, stl::sintor<T, SFINAE> const & sintor ) {
     ar ( make_size_tag ( static_cast<size_type> ( sintor.size ( ) ) ) ); // number of elements
     ar ( binary_data ( sintor.data ( ) - 2, ( sintor.size ( ) + 2 ) * sizeof ( T ) ) );
 }
 
-template <class Archive, class T, typename SFINAE = typename std::enable_if<stl::is_signed_integral<T>::value>::type> inline
+template <typename Archive, typename T, typename SFINAE = typename std::enable_if<stl::is_signed_integral<T>::value>::type> inline
 typename std::enable_if<traits::is_input_serializable<BinaryData<T>, Archive>::value and stl::is_signed_integral<T>::value, void>::type
     CEREAL_LOAD_FUNCTION_NAME ( Archive & ar, stl::sintor<T, SFINAE> & sintor ) {
     typename stl::sintor<T, SFINAE>::size_type sintorSize;
