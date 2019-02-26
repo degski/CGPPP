@@ -178,10 +178,10 @@ struct FunctionSet {
 
     public:
 
-    stl::vector<Label> label;
-    stl::vector<Pointer> function;
-    stl::vector<Real> cost;
-    stl::vector<int> arity;
+    std::vector<Label> label;
+    std::vector<Pointer> function;
+    std::vector<Real> cost;
+    std::vector<int> arity;
 
     int size = 0;
 

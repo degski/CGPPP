@@ -74,7 +74,7 @@ struct Data {
     private:
 
     int in_arity, out_arity, record_size, num_records;
-    stl::vector<Real> data;
+    std::vector<Real> data;
 
     struct const_iterator {
 

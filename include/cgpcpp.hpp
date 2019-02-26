@@ -139,8 +139,6 @@ struct Parameters {
 
     int numThreads;
 
-    static thread_local sax::Rng prng;
-
     Parameters ( ) noexcept :
 
         mu { 1 },

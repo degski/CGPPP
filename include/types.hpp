@@ -47,8 +47,9 @@ using Float = float;
 #include <cereal/types/vector.hpp>
 #endif
 
-
 #include <cereal/cereal.hpp>
+
+
 
 namespace stl {
 
