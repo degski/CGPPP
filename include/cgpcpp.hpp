@@ -288,7 +288,7 @@ Parameters<Float> & initialize ( const int numInputs_, const int numNodes_, cons
 template<typename Real>
 struct Node {
 
-    stl::vector<int> inputs;
+    stl::sintor<int> inputs;
 
     int function;
     bool active;
@@ -300,9 +300,9 @@ struct Node {
     Node ( Node && ) noexcept = default;
     explicit Node ( const int nodePosition_ ) :
 
-        function { functionSet.getRandomFunction ( ) },
-        active { false },
-        arity { std::min ( functionSet.arity [ function ], params.arity ) } {
+        function ( functionSet.getRandomFunction ( ) ),
+        active ( false ),
+        arity ( std::min ( functionSet.arity [ function ], params.arity ) ) {
 
         inputs.reserve ( params.arity );
         std::generate_n ( sax::back_emplacer ( inputs ), params.arity, [ nodePosition_ ] ( ) noexcept { return params.getRandomNodeInput ( nodePosition_ ); } );
@@ -356,7 +356,7 @@ template<typename Real>
 struct Chromosome {
 
     stl::vector<Node<Real>> nodes;
-    stl::vector<int> outputNodes;
+    stl::sintor<int> outputNodes;
     stl::vector<Real> outputValues;
 
     Real fitness;

@@ -97,6 +97,8 @@ int main ( ) {
 
     std::cout << a << nl;
 
+    std::cout << sizeof ( cgp::Node<float> ) << nl;
+
     /*
 
     auto p = cgp::initialize ( 2, 32, 1, 2 );
