@@ -65,6 +65,7 @@ namespace fs = std::filesystem;
 // https://github.com/degski/Sax/
 
 #include <sax/prng.hpp>
+#include <sax/singleton.hpp>
 #include <sax/stl.hpp>
 #include <sax/string_split.hpp>
 
@@ -271,14 +272,8 @@ struct Parameters {
 };
 
 
-namespace detail {
-Parameters<Float> & params ( ) noexcept {
-    static Parameters<Float> parameters;
-    return parameters;
-}
-}
+inline auto params = [ ] { return sax::singleton<Parameters<Float>> ( ).instance ( ); } ( );
 
-auto params = detail::params ( );
 
 Parameters<Float> & initialize ( const int numInputs_, const int numNodes_, const int numOutputs_, const int arity_ ) noexcept {
     return params.setDimensions ( numInputs_, numNodes_, numOutputs_, arity_ );

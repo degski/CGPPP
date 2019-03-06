@@ -322,12 +322,7 @@ struct FunctionSet {
 };
 
 
-namespace detail {
-sax::singleton<FunctionSet<Float>> singletonFunctionSet;
-}
-
-
-const auto functionSet = [ ] { return detail::singletonFunctionSet.instance ( ); } ( );
+inline const auto functionSet = [ ] { return sax::singleton<FunctionSet<Float>> ( ).instance ( ); } ( );
 
 
 namespace function {
