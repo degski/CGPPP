@@ -42,7 +42,13 @@
 
 namespace cgp {
 
-struct Rng {
+struct Rng final {
+
+    Rng ( Rng && ) = delete;
+    Rng ( const Rng & ) = delete;
+
+    Rng & operator = ( Rng && ) = delete;
+    Rng & operator = ( const Rng & ) = delete;
 
     static void seed ( const std::uint64_t s_ = 0u ) noexcept {
         Rng::gen ( ).seed ( s_ ? s_ : sax::os_seed ( ) );
