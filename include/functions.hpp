@@ -518,12 +518,12 @@ template<typename Real> [[ nodiscard ]] Real f_pi ( const stl::vector<Real> & in
 
 // Node function rand. Returns a random number [ -1, 1 ].
 template<typename Real> [[ nodiscard ]] Real f_rand ( const stl::vector<Real> & inputs_ ) noexcept {
-    return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( Rng::gen );
+    return std::uniform_real_distribution<Real> ( -1.0, 1.0 ) ( Rng::gen ( ) );
 }
 
 // Node function bern. Returns a random -1 or 1.
 template<typename Real> [[ nodiscard ]] Real f_bern ( const stl::vector<Real> & inputs_ ) noexcept {
-    return static_cast< Real > ( std::bernoulli_distribution ( ) ( Rng::gen ) * 2 - 1 );
+    return static_cast< Real > ( std::bernoulli_distribution ( ) ( Rng::gen ( ) ) * 2 - 1 );
 }
 
 // Node function and. Return logical AND, returns 1 if all inputs_ are 1 else, 1.
@@ -626,9 +626,9 @@ struct FunctionStats {
 
 template<typename Real>
 stl::vector<Real> getInputs ( const int arity_ ) noexcept {
-    const int arity = arity_ == cgp::FunctionSet<Real>::variableNumInputs ? std::geometric_distribution<> ( ) ( cgp::Rng::gen ) + 2 : arity_;
+    const int arity = arity_ == cgp::FunctionSet<Real>::variableNumInputs ? std::geometric_distribution<> ( ) ( cgp::Rng::gen ( ) ) + 2 : arity_;
     stl::vector<Real> v ( arity );
-    std::generate ( std::begin ( v ), std::end ( v ), [ ] { return std::uniform_real_distribution<Real> ( Real { -1 }, Real { 1 } ) ( cgp::Rng::gen ); } );
+    std::generate ( std::begin ( v ), std::end ( v ), [ ] { return std::uniform_real_distribution<Real> ( Real { -1 }, Real { 1 } ) ( cgp::Rng::gen ( ) ); } );
     return v;
 }
 

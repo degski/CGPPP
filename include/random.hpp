@@ -44,23 +44,22 @@ namespace cgp {
 
 struct Rng {
 
-    static thread_local sax::Rng gen;
-
     static void seed ( const std::uint64_t s_ = 0u ) noexcept {
-        Rng::gen.seed ( s_ ? s_ : sax::os_seed ( ) );
+        Rng::gen ( ).seed ( s_ ? s_ : sax::os_seed ( ) );
     }
 
     [[ nodiscard ]] static int randInt ( const int n_ ) noexcept {
         if ( not ( n_ ) )
             return 0;
-        return sax::uniform_int_distribution<int> ( 0, n_ - 1 ) ( Rng::gen );
+        return sax::uniform_int_distribution<int> ( 0, n_ - 1 ) ( Rng::gen ( ) );
+    }
+
+    [[ nodiscard ]] static sax::Rng & gen ( ) noexcept {
+        static thread_local sax::Rng generator ( RANDOM ? sax::os_seed ( ) : sax::fixed_seed ( ) );
+        return generator;
     }
 };
 
-
-thread_local sax::Rng Rng::gen ( RANDOM ? sax::os_seed ( ) : sax::fixed_seed ( ) );
-
 }
-
 
 #undef RANDOM

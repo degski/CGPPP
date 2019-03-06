@@ -215,11 +215,11 @@ struct Parameters {
     }
 
     [[ nodiscard ]] bool mutate ( ) const noexcept {
-        return mutationDistribution ( Rng::gen );
+        return mutationDistribution ( Rng::gen ( ) );
     }
 
     [[ nodiscard ]] int getRandomNodeInput ( const int nodePosition_ ) const noexcept {
-        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( Rng::gen ) ?
+        return std::bernoulli_distribution ( recurrentConnectionProbability ) ( Rng::gen ( ) ) ?
             Rng::randInt ( numNodes - nodePosition_ ) + nodePosition_ + numInputs :
             Rng::randInt ( numInputs + nodePosition_ );
     }
