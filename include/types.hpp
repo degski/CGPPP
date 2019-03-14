@@ -181,8 +181,7 @@ struct sintor {
         SIZE = n_;
     }
     sintor ( sintor && other_ ) noexcept :
-        m_data ( other_.m_data ) {
-        other_.m_data = nullptr;
+        m_data ( std::exchange ( other_.m_data, nullptr ) ) {
     }
     sintor ( const sintor & other_ ) :
         m_data ( alloc ( other_.size ( ) ) ) {
@@ -201,8 +200,7 @@ struct sintor {
     }
 
     [[ maybe_unused ]] sintor & operator = ( sintor && other_ ) noexcept {
-        m_data = other_.m_data;
-        other_.m_data = nullptr;
+        m_data = std::exchange ( other_.m_data, nullptr );
         return * this;
     }
     [[ maybe_unused ]] sintor & operator = ( const sintor & other_ ) {
