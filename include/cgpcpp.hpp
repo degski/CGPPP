@@ -1,7 +1,7 @@
 
 // MIT License
 //
-// Copyright (c) 2019 degski
+// Copyright (c) 2019, 2020 degski
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -439,7 +439,7 @@ struct Chromosome {
             return v;
         else if ( std::isinf ( v ) ) // This can happen.
             return v > Real { 0 } ? std::numeric_limits<Real>::max ( ) : std::numeric_limits<Real>::min ( );
-        #if defined ( _DEBUG )
+        #ifndef NDEBUG
         else if ( std::isnan ( v ) ) {
             std::cout << "Error: NAN returned from function \"" << functionSet.label [ function_ ].data ( ) << '\"' << nl;
             std::cout << "This should not happen, fix the above function returning the NAN" << nl;

@@ -1,7 +1,7 @@
 
 // MIT License
 //
-// Copyright (c) 2019 degski
+// Copyright (c) 2019, 2020 degski
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,7 @@ using Float = float;
 
 
 #if defined ( USE_PECTOR )
-#include <pector/pector.h> // Use my fork at https://github.com/degski/pector, or hell will come upon you.
+#include <pector/pector.h> // Use my fork at https://github.com/degski/pector.
 #include <pector/malloc_allocator.h>
 #include <cereal/types/pector.hpp>
 #else
@@ -138,7 +138,7 @@ bool operator != ( const detail::null_allocator<T> &, const detail::null_allocat
 #define CAPACITY m_data [ -2 ]
 #define SIZE m_data [ -1 ]
 
-#if defined ( _DEBUG )
+#ifndef NDEBUG
 #define ALIGNED_MALLOC(A,S) _aligned_malloc_dbg((S),(A),NULL,NULL)
 #define ALIGNED_REALLOC(D,A,S) _aligned_realloc_dbg((D),(S),(A),NULL,NULL)
 #define ALIGNED_FREE(D) _aligned_free_dbg((D))

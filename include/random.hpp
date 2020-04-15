@@ -1,7 +1,7 @@
 
 // MIT License
 //
-// Copyright (c) 2019 degski
+// Copyright (c) 2019, 2020 degski
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@
 #include <sax/prng.hpp>
 #include <sax/uniform_int_distribution.hpp>
 
-#if defined ( _DEBUG )
+#ifndef NDEBUG
 #define RANDOM 0
 #else
 #define RANDOM 1
